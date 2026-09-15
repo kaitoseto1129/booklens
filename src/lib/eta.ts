@@ -1,12 +1,13 @@
 import { stepAverages, type TimelineEntry } from "./db";
 
 /** 標準的なステップ列と既定の所要時間（ms）。実績が溜まるほど実績側に寄せる。 */
+// Sonnet 5 + 並列化（verifyとvisualsを同時実行）+ 書き直しループ廃止 後の実測ベース（合計 約5分）
 const DEFAULTS: Record<string, number> = {
-  identify: 5_000, prefetch: 10_000, quick: 20_000, availability: 5_000, fulltext: 5_000,
-  research: 120_000, sources: 25_000, gapfill: 60_000, extract: 60_000, summarize: 150_000, verify: 60_000, revise: 150_000,
+  identify: 3_000, prefetch: 6_000, quick: 12_000, availability: 3_000, fulltext: 5_000,
+  research: 70_000, sources: 20_000, gapfill: 40_000, extract: 35_000, summarize: 120_000, verify: 30_000,
 };
 const SEQUENCE = ["identify", "prefetch", "quick", "availability", "research", "sources", "extract", "summarize", "verify"];
-const OPTIONAL: Record<string, number> = { gapfill: 0.5, revise: 0.6 }; // 発生確率で期待値に加える
+const OPTIONAL: Record<string, number> = { gapfill: 0.4 }; // 発生確率で期待値に加える（書き直しは廃止）
 
 let cache: { at: number; avg: Record<string, number> } | null = null;
 function averages() {

@@ -51,13 +51,16 @@ const Tag = ({ kind }: { kind: "book" | "insight" }) => (
 );
 const Refs = ({ refs }: { refs?: string[] }) => (refs && refs.length ? <span className="text-[11px] text-muted ml-1">({refs.join(", ")})</span> : null);
 
-/** 折りたたみ（長文を最初から全部見せない） */
-function Collapsible({ label, children }: { label: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+/** アコーディオンの1行（クリックした人だけ本文を見る） */
+function Acc({ title, children, defaultOpen = false }: { title: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div>
-      <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-sm text-accent hover:underline">{open ? "閉じる" : label} <span className="text-xs">{open ? "▲" : "▼"}</span></button>
-      {open && <div className="mt-3">{children}</div>}
+    <div className="border-b border-line last:border-0">
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between gap-3 py-3.5 text-left">
+        <span className="font-medium">{title}</span>
+        <span className="text-muted text-lg shrink-0 leading-none">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="pb-4 text-sm space-y-3 -mt-0.5">{children}</div>}
     </div>
   );
 }
@@ -65,14 +68,12 @@ function Collapsible({ label, children }: { label: string; children: React.React
 const TOC = [
   { id: "conc", label: "結論" },
   { id: "use", label: "どう使うか" },
-  { id: "video", label: "動画で見る" },
   { id: "takeaways", label: "得られる3つ" },
   { id: "points", label: "重要ポイント" },
-  { id: "concepts", label: "登場人物・概念" },
   { id: "structure", label: "本の構造" },
-  { id: "detail", label: "詳しく読む" },
-  { id: "insight", label: "AI INSIGHT" },
+  { id: "apply", label: "自分に活かす" },
   { id: "ask", label: "AIに質問" },
+  { id: "more", label: "もっと詳しく" },
 ];
 
 export default function BookView({ id, initialLibraryStatus }: { id: string; initialLibraryStatus: string | null }) {
@@ -81,6 +82,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
   const [openPoint, setOpenPoint] = useState<number | null>(0);
   const [structTab, setStructTab] = useState<"diagram" | "visual">("diagram");
   const [diagIdx, setDiagIdx] = useState(0);
+  const [showAllPoints, setShowAllPoints] = useState(false);
   const [showSources, setShowSources] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [lib, setLib] = useState<string | null>(initialLibraryStatus);
@@ -270,65 +272,64 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
 
           <div className="mt-8 grid lg:grid-cols-[minmax(0,1fr)_240px] gap-8 items-start">
             <main className="space-y-10 min-w-0">
-              {/* 動画 */}
-              <section id="video">
-                <h2 className="font-display text-xl mb-3">動画で理解する</h2>
-                <div className="grid grid-cols-3 gap-2">
-                  {([5, 10, 20] as const).map((len) => (
-                    <button key={len} onClick={() => openVideo(len)} disabled={videoLoading !== null} className="rounded-xl border border-line hover:border-accent p-3 text-center disabled:opacity-50 card-hover">
-                      <div className="text-2xl font-display">{len}<span className="text-sm">分</span></div>
-                      <div className="text-[11px] text-muted mt-0.5">{len === 5 ? "核心だけ" : len === 10 ? "しっかり" : "詳しく"}</div>
-                      {videoLoading === len && <div className="text-[11px] text-accent pulse mt-1">AIが作成中…<br />初回のみ約1分</div>}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs">
-                  <button onClick={() => setPlaying(true)} className="text-accent hover:underline">▶ 音声だけで聞く</button>
-                  <button onClick={() => openVideo(10, "derived")} disabled={videoLoading !== null} className="text-muted hover:text-fg underline">かんたん版（即時）</button>
-                  <button onClick={share} className="text-muted hover:text-fg underline">{copied ? "コピーしました ✓" : "🔗 リンクを共有"}</button>
-                </div>
-              </section>
-
-              {/* この本から得られる3つ */}
+              {/* この本から得られる3つ + 動画（コンパクト） */}
               <section id="takeaways">
                 <h2 className="font-display text-xl mb-3">この本から得られる3つ</h2>
                 <div className="grid sm:grid-cols-3 gap-3">
                   {a.brief30.top3.map((p, i) => (
-                    <div key={i} className="card p-4 card-hover"><div className="font-display text-2xl text-accent">{String(i + 1).padStart(2, "0")}</div><div className="font-medium mt-1">{p.title}</div><p className="text-sm text-muted mt-1">{p.body}</p></div>
+                    <div key={i} className="card p-4 card-hover"><div className="font-display text-2xl text-accent">{String(i + 1).padStart(2, "0")}</div><div className="font-medium mt-1">{p.title}</div><p className="text-sm text-muted mt-1 line-clamp-3">{p.body}</p></div>
                   ))}
                 </div>
                 <p className="mt-3 text-sm"><Tag kind="book" /> <span className="ml-1">{a.brief30.one_liner}</span></p>
                 <p className="text-xs text-muted mt-1">誰におすすめ：{a.brief30.for_whom}</p>
+                <div className="mt-4 rounded-xl border border-line p-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-sm font-medium">🎬 動画で理解する</span>
+                    <div className="flex gap-1.5">
+                      {([5, 10, 20] as const).map((len) => (
+                        <button key={len} onClick={() => openVideo(len)} disabled={videoLoading !== null} className="rounded-full border border-line hover:border-accent px-3 py-1.5 text-xs disabled:opacity-50">{len}分{videoLoading === len ? "…" : ""}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                    <button onClick={() => setPlaying(true)} className="text-accent hover:underline">▶ 音声だけで聞く</button>
+                    <button onClick={() => openVideo(10, "derived")} disabled={videoLoading !== null} className="text-muted hover:text-fg underline">かんたん版（即時）</button>
+                    <button onClick={share} className="text-muted hover:text-fg underline">{copied ? "コピーしました ✓" : "🔗 共有"}</button>
+                  </div>
+                  {videoLoading !== null && <div className="text-[11px] text-accent pulse mt-1">AIが作成中…初回のみ約1分</div>}
+                </div>
               </section>
 
-              {/* 重要ポイント（3段階） */}
+              {/* 重要ポイント（上位だけ展開、残りは隠す・各カードは短く） */}
               <section id="points">
-                <h2 className="font-display text-xl mb-3">重要な{a.key_points.length}つの主張</h2>
+                <h2 className="font-display text-xl mb-3">重要なポイント</h2>
                 <ol className="space-y-2.5">
                   {a.key_points.map((p, i) => {
+                    if (i >= 5 && !showAllPoints) return null;
+                    const open = openPoint === i;
                     const lv1 = p.importance >= 5;
-                    const open = openPoint === i || lv1;
                     return (
-                      <li key={i} className={`rounded-2xl border ${lv1 ? "border-accent/40 bg-accent-soft/40" : "border-line bg-card"} card-hover`}>
-                        <button onClick={() => setOpenPoint(openPoint === i ? -1 : i)} className="w-full text-left p-4 flex gap-3 items-start">
+                      <li key={i} className={`rounded-2xl border ${lv1 ? "border-accent/40 bg-accent-soft/30" : "border-line bg-card"} card-hover`}>
+                        <button onClick={() => setOpenPoint(open ? -1 : i)} className="w-full text-left p-4 flex gap-3 items-start">
                           <span className="font-display text-xl text-accent shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                          <span className="flex-1">
-                            <span className={`font-medium ${lv1 ? "text-lg" : ""}`}>{p.title}</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="font-medium">{p.title}</span>
                             <span className="ml-2 inline-block"><Stars n={p.importance} /></span>
                             {lv1 && <span className="ml-2 text-[10px] font-semibold text-accent tracking-wider">必須</span>}
+                            {!open && <span className="block text-sm text-muted mt-0.5 line-clamp-2">{p.body}</span>}
                           </span>
-                          {!lv1 && <span className="text-muted text-sm">{open ? "−" : "+"}</span>}
+                          <span className="text-muted text-xs shrink-0 mt-1">{open ? "− 閉じる" : "詳しく"}</span>
                         </button>
                         {open && (
-                          <div className={`px-4 pb-4 text-sm ${lv1 ? "" : "-mt-1"}`}>
+                          <div className="px-4 pb-4 text-sm -mt-1">
                             <Tag kind="book" /> <span className="ml-1">{p.body}</span><Refs refs={p.evidence} />
                             <div className="mt-3 flex flex-wrap gap-1.5 items-center">
                               {([["got", "✓ 理解した"], ["review", "☆ 復習"], ["unclear", "？ わからない"]] as [Level, string][]).map(([lv, label]) => (
-                                <button key={lv} onClick={() => { markU(i, lv); if (lv === "unclear") window.dispatchEvent(new CustomEvent("booklens-explain", { detail: `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。` })); }}
+                                <button key={lv} onClick={() => { markU(i, lv); if (lv === "unclear") { emit("booklens-explain", `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。`); scrollToId("ask"); } }}
                                   className={`text-xs rounded-full px-2.5 py-1 border ${u[String(i)] === lv ? (lv === "got" ? "bg-good text-white border-transparent" : lv === "review" ? "bg-accent text-white border-transparent" : "bg-book text-white border-transparent") : "border-line text-muted hover:border-accent"}`}>{label}</button>
                               ))}
                               <span className="w-px h-4 bg-line mx-1" />
-                              <button onClick={() => window.dispatchEvent(new CustomEvent("booklens-apply", { detail: `この考え方「${p.title}」を、自分の事業に当てはめると具体的に何をすべき？` }))} className="text-xs rounded-full border border-accent text-accent px-3 py-1 hover:bg-accent-soft">自分に当てはめる ✨</button>
+                              <button onClick={() => { emit("booklens-apply", `この考え方「${p.title}」を、自分の事業に当てはめると具体的に何をすべき？`); scrollToId("ask"); }} className="text-xs rounded-full border border-accent text-accent px-3 py-1 hover:bg-accent-soft">自分に当てはめる ✨</button>
                             </div>
                           </div>
                         )}
@@ -336,21 +337,12 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                     );
                   })}
                 </ol>
+                {a.key_points.length > 5 && (
+                  <button onClick={() => setShowAllPoints((v) => !v)} className="mt-3 text-sm text-accent hover:underline">{showAllPoints ? "上位だけ表示 ↑" : `残り${a.key_points.length - 5}個のポイントを見る →`}</button>
+                )}
               </section>
 
-              {/* 登場人物・概念 */}
-              <section id="concepts">
-                <h2 className="font-display text-xl mb-3">登場人物・概念</h2>
-                <div className="grid sm:grid-cols-2 gap-2.5">
-                  {a.brief180.concepts.map((c, i) => (
-                    <div key={i} className="card p-3.5"><div className="flex justify-between gap-2 items-baseline"><b>{c.name}</b><Stars n={c.importance} /></div><p className="text-sm text-muted mt-1">{c.description}<Refs refs={c.evidence} /></p>
-                      <button onClick={() => window.dispatchEvent(new CustomEvent("booklens-explain", { detail: `「${c.name}」を、中学生でも分かるように、具体例つきでやさしく説明して。` }))} className="mt-2 text-xs text-accent hover:underline">やさしく説明 →</button>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* 本の構造（図解＋表をタブに集約） */}
+              {/* 本の構造（図解） */}
               {hasStruct && (
                 <section id="structure">
                   <div className="flex items-baseline justify-between mb-3">
@@ -378,94 +370,98 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                 </section>
               )}
 
-              {/* 詳しく読む（折りたたみ） */}
-              <section id="detail">
-                <h2 className="font-display text-xl mb-3">詳しく読む</h2>
-                <div className="card p-5 space-y-4">
-                  <div><h3 className="font-semibold mb-1">この本の問題意識</h3><p className="text-sm">{a.brief180.problem}</p></div>
-                  <div><h3 className="font-semibold mb-1">著者の結論</h3><p className="text-sm">{a.brief180.conclusion}</p></div>
-                  <Collapsible label="背景・著者・章構成・応用をもっと読む">
-                    <div className="space-y-4 text-sm">
-                      <div><h3 className="font-semibold mb-1">本の背景</h3><p>{a.detail.background}</p></div>
-                      <div className="flex gap-4">
-                        {book.author_image && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={book.author_image} alt="" className="w-20 h-20 object-cover rounded-lg shrink-0 border border-line" />
-                        )}
-                        <div><h3 className="font-semibold mb-1">著者について</h3><p>{a.detail.about_author}</p></div>
-                      </div>
-                      <div><h3 className="font-semibold mb-1">中心的な問い</h3><p>{a.detail.central_question}</p></div>
-                      <div><h3 className="font-semibold mb-1">著者の主張</h3><ul className="list-disc pl-5 space-y-1">{a.detail.claims.map((e, i) => <li key={i}>{e}</li>)}</ul></div>
-                      {a.detail.examples.length > 0 && <div><h3 className="font-semibold mb-1">具体例</h3><ul className="list-disc pl-5 space-y-1">{a.detail.examples.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
-                      <div>
-                        <h3 className="font-semibold mb-1">章構成 {a.detail.chapters_verified && <span className="text-xs text-muted font-normal">（目次を確認済み）</span>}</h3>
-                        {a.detail.chapters.length > 0
-                          ? <ol className="space-y-2">{a.detail.chapters.map((c) => <li key={c.number} className="border-l-2 border-line pl-3"><b>第{c.number}章 {c.title}</b><p className="text-muted mt-0.5">{c.summary}</p></li>)}</ol>
-                          : <p className="text-muted">{a.detail.chapters_note || "章ごとの詳細は十分取得できませんでした。"}</p>}
-                      </div>
-                      {a.detail.critiques.length > 0 && <div><h3 className="font-semibold mb-1"><Tag kind="book" /> 批判・限界</h3><ul className="list-disc pl-5 space-y-1">{a.detail.critiques.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
-                      <div><h3 className="font-semibold mb-1">応用方法</h3><ul className="list-disc pl-5 space-y-1">{a.detail.applications.map((e, i) => <li key={i}>{e}</li>)}</ul></div>
-                    </div>
-                  </Collapsible>
-                </div>
-              </section>
-
-              {/* 自分向けに変換 */}
-              <PersonaBox bookId={id} />
-
-              {/* 今日から / なぜ重要 */}
-              <section className="grid sm:grid-cols-2 gap-4">
-                <div className="card p-5"><div className="text-xs font-medium text-accent mb-1">今日から使える1つ</div><p className="font-medium">{a.today_action.action}</p><p className="text-sm text-muted mt-1">{a.today_action.why}</p></div>
-                <div className="card p-5"><div className="text-xs font-medium text-accent mb-1">なぜこの本が重要か</div><p className="text-sm">{a.why_care}</p></div>
-              </section>
-
-              {/* 実践する（本 → 理解 → 自分の場合 → 行動） */}
-              <section id="practice" className="card p-5 space-y-4">
-                <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <h2 className="font-display text-lg">この本をあなたが実践するなら</h2>
-                  <button onClick={() => { emit("booklens-apply", `「${book.title}」を${ctx?.name ? ctx.name + "で" : "私の状況で"}実践するための、具体的なSTEP（各STEPでやることと、その理由）を作って。`); scrollToId("ask"); }}
-                    className="text-xs rounded-full bg-accent text-white px-4 py-1.5 font-medium hover:opacity-90">✨ 私の場合のSTEPを作る</button>
-                </div>
-                <ol className="space-y-2.5">
-                  {a.action_items.map((t, i) => (
-                    <li key={i} className="flex gap-3 items-start rounded-xl border border-line p-3.5">
-                      <span className="shrink-0 rounded-lg bg-accent-soft text-accent font-display text-sm px-2.5 py-1">STEP {i + 1}</span>
-                      <span className="text-sm flex-1">{t}</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="text-xs text-muted">本の内容 → 理解 → 自分の場合 → 具体的な行動、までBookLensの中で完結できます。</p>
-              </section>
-
-              {/* 復習・クイズ */}
-              <section id="review" className="card p-5 space-y-4">
-                <h2 className="font-display text-lg">覚えているか確認する</h2>
-                <Quiz bookId={id} />
-              </section>
-
-              {/* AI INSIGHT */}
-              <section id="insight" className="card p-5 space-y-3 border-insight/40">
-                <div className="flex items-center gap-2"><Tag kind="insight" /><span className="text-xs text-muted">本の内容ではなく、AIによる応用・解釈・反論</span></div>
-                {a.ai_insight.applications.length > 0 && <div><h3 className="font-medium mb-1">応用の視点</h3><ul className="list-disc pl-5 space-y-1 text-sm">{a.ai_insight.applications.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
-                {a.ai_insight.counterarguments.length > 0 && <div><h3 className="font-medium mb-1">反論・弱点</h3><ul className="list-disc pl-5 space-y-1 text-sm">{a.ai_insight.counterarguments.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
-                {a.ai_insight.evidence_check && <div><h3 className="font-medium mb-1">Evidence Check</h3><p className="text-sm">{a.ai_insight.evidence_check}</p></div>}
-              </section>
-
-              {a.quotes.length > 0 && (
-                <section><h2 className="font-display text-xl mb-3">印象的な引用</h2><ul className="space-y-2">{a.quotes.map((q, i) => <li key={i} className="border-l-2 border-accent pl-3 text-sm italic">“{q.text}” <span className="not-italic text-xs text-muted">({q.evidence})</span></li>)}</ul></section>
-              )}
-
-              {(a.unverified.length > 0 || a.conflicts.length > 0) && (
-                <Collapsible label="確認できていない点・資料の食い違いを見る">
-                  <div className="text-sm text-muted space-y-2">
-                    {a.unverified.length > 0 && <div><b>確認できていない点：</b><ul className="list-disc pl-5">{a.unverified.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
-                    {a.conflicts.length > 0 && <div><b>資料によって説明が異なる点：</b><ul className="list-disc pl-5">{a.conflicts.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
+              {/* ✨ 自分/自社に活かす（BookLensの核・大きく）＋ 実践STEP */}
+              <section id="apply" className="card p-6 border-accent/40 bg-accent-soft/20 space-y-5">
+                <div>
+                  <div className="text-xs tracking-widest uppercase text-accent mb-1">BookLens の使いどころ</div>
+                  <h2 className="font-display text-2xl">✨ この本をあなたに当てはめる</h2>
+                  <p className="text-sm text-muted mt-1">あなたの状況と、この本の知識を組み合わせて、次にやるべきことを提案します。</p>
+                  <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
+                    <button onClick={() => { emit("booklens-apply", `「${book.title}」の考え方を、私自身の状況に当てはめて、次にやるべきことを提案して。`); scrollToId("ask"); }} className="rounded-xl bg-card border border-accent/50 hover:border-accent p-4 text-left card-hover"><div className="text-2xl mb-1">✨</div><div className="font-medium">自分に活かす</div><div className="text-xs text-muted mt-0.5">自分の状況に当てはめる</div></button>
+                    <button onClick={() => { emit("booklens-apply", `「${book.title}」の考え方を${ctx?.name || "私の事業"}に当てはめて、いま最優先でやるべき改善策を出して。`); scrollToId("ask"); }} className="rounded-xl bg-card border border-accent/50 hover:border-accent p-4 text-left card-hover"><div className="text-2xl mb-1">🏢</div><div className="font-medium">自社・事業に活かす</div><div className="text-xs text-muted mt-0.5">{hasCtx ? `${ctx?.name || "あなたの事業"} に当てはめる` : "事業の意思決定に使う"}</div></button>
                   </div>
-                </Collapsible>
-              )}
+                </div>
+                <div id="practice" className="pt-1">
+                  <div className="flex items-baseline justify-between gap-2 flex-wrap mb-2">
+                    <h3 className="font-medium">この本を実践するなら</h3>
+                    <button onClick={() => { emit("booklens-apply", `「${book.title}」を${ctx?.name ? ctx.name + "で" : "私の状況で"}実践するための、具体的なSTEP（各STEPでやることと、その理由）を作って。`); scrollToId("ask"); }} className="text-xs rounded-full bg-accent text-white px-4 py-1.5 font-medium hover:opacity-90">✨ 私の場合のSTEPを作る</button>
+                  </div>
+                  <ol className="space-y-2">
+                    {a.action_items.map((t, i) => (
+                      <li key={i} className="flex gap-3 items-start rounded-xl bg-card border border-line p-3">
+                        <span className="shrink-0 rounded-lg bg-accent-soft text-accent font-display text-xs px-2 py-1">STEP {i + 1}</span>
+                        <span className="text-sm flex-1">{t}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </section>
 
-              {/* AIに質問 */}
+              {/* BookLens AI */}
               <section id="ask"><Chat bookId={id} ready={done} bookTitle={book.title} /></section>
+
+              {/* もっと詳しく読む（すべてアコーディオン・開いた人だけ表示） */}
+              <section id="more">
+                <h2 className="font-display text-xl mb-1">もっと詳しく読む</h2>
+                <p className="text-xs text-muted mb-3">必要な人だけ。項目を開くと本文が表示されます。</p>
+                <div className="card px-5">
+                  <Acc title={`重要な概念・用語（${a.brief180.concepts.length}）`}>
+                    <div className="grid sm:grid-cols-2 gap-2.5">
+                      {a.brief180.concepts.map((c, i) => (
+                        <div key={i} className="rounded-xl border border-line p-3"><div className="flex justify-between gap-2 items-baseline"><b>{c.name}</b><Stars n={c.importance} /></div><p className="text-sm text-muted mt-1">{c.description}<Refs refs={c.evidence} /></p><button onClick={() => { emit("booklens-explain", `「${c.name}」を、中学生でも分かるように、具体例つきでやさしく説明して。`); scrollToId("ask"); }} className="mt-2 text-xs text-accent hover:underline">やさしく説明 →</button></div>
+                      ))}
+                    </div>
+                  </Acc>
+                  <Acc title={<>章ごとの詳細 {a.detail.chapters_verified && <span className="text-xs text-muted font-normal">（目次を確認済み）</span>}</>}>
+                    {a.detail.chapters.length > 0
+                      ? <ol className="space-y-2">{a.detail.chapters.map((c) => <li key={c.number} className="border-l-2 border-line pl-3"><b>第{c.number}章 {c.title}</b><p className="text-muted mt-0.5">{c.summary}</p></li>)}</ol>
+                      : <p className="text-muted">{a.detail.chapters_note || "章ごとの詳細は十分取得できませんでした。"}</p>}
+                  </Acc>
+                  <Acc title="著者の主張を詳しく">
+                    <div><h4 className="font-semibold mb-1">この本の問題意識</h4><p>{a.brief180.problem}</p></div>
+                    <div><h4 className="font-semibold mb-1">中心的な問い</h4><p>{a.detail.central_question}</p></div>
+                    <div><h4 className="font-semibold mb-1">著者の結論</h4><p>{a.brief180.conclusion}</p></div>
+                    <div><h4 className="font-semibold mb-1">主張</h4><ul className="list-disc pl-5 space-y-1">{a.detail.claims.map((e, i) => <li key={i}>{e}</li>)}</ul></div>
+                    {a.detail.examples.length > 0 && <div><h4 className="font-semibold mb-1">具体例</h4><ul className="list-disc pl-5 space-y-1">{a.detail.examples.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
+                    {a.detail.critiques.length > 0 && <div><h4 className="font-semibold mb-1"><Tag kind="book" /> 批判・限界</h4><ul className="list-disc pl-5 space-y-1">{a.detail.critiques.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
+                    <div><h4 className="font-semibold mb-1">応用方法</h4><ul className="list-disc pl-5 space-y-1">{a.detail.applications.map((e, i) => <li key={i}>{e}</li>)}</ul></div>
+                  </Acc>
+                  <Acc title="本の背景・著者について">
+                    <div><h4 className="font-semibold mb-1">本の背景</h4><p>{a.detail.background}</p></div>
+                    <div className="flex gap-4">
+                      {book.author_image && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={book.author_image} alt="" className="w-20 h-20 object-cover rounded-lg shrink-0 border border-line" />
+                      )}
+                      <div><h4 className="font-semibold mb-1">著者について</h4><p>{a.detail.about_author}</p></div>
+                    </div>
+                  </Acc>
+                  <Acc title={<><Tag kind="insight" /> <span className="ml-1">応用・反論（AIによる視点）</span></>}>
+                    {a.ai_insight.applications.length > 0 && <div><h4 className="font-medium mb-1">応用の視点</h4><ul className="list-disc pl-5 space-y-1">{a.ai_insight.applications.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
+                    {a.ai_insight.counterarguments.length > 0 && <div><h4 className="font-medium mb-1">反論・弱点</h4><ul className="list-disc pl-5 space-y-1">{a.ai_insight.counterarguments.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
+                    {a.ai_insight.evidence_check && <div><h4 className="font-medium mb-1">Evidence Check</h4><p>{a.ai_insight.evidence_check}</p></div>}
+                  </Acc>
+                  <Acc title="今日から使える1つ・なぜ重要か">
+                    <div><h4 className="font-semibold mb-1">今日から使える1つ</h4><p className="font-medium">{a.today_action.action}</p><p className="text-muted mt-1">{a.today_action.why}</p></div>
+                    <div><h4 className="font-semibold mb-1">なぜこの本が重要か</h4><p>{a.why_care}</p></div>
+                  </Acc>
+                  <Acc title="立場を変えて読む（ペルソナ別）"><PersonaBox bookId={id} /></Acc>
+                  <Acc title="理解度をクイズで確認"><Quiz bookId={id} /></Acc>
+                  {a.quotes.length > 0 && (
+                    <Acc title="印象的な引用">
+                      <ul className="space-y-2">{a.quotes.map((q, i) => <li key={i} className="border-l-2 border-accent pl-3 italic">“{q.text}” <span className="not-italic text-xs text-muted">({q.evidence})</span></li>)}</ul>
+                    </Acc>
+                  )}
+                  {(a.unverified.length > 0 || a.conflicts.length > 0) && (
+                    <Acc title="確認できていない点・資料の食い違い">
+                      <div className="text-muted space-y-2">
+                        {a.unverified.length > 0 && <div><b>確認できていない点：</b><ul className="list-disc pl-5">{a.unverified.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
+                        {a.conflicts.length > 0 && <div><b>資料によって説明が異なる点：</b><ul className="list-disc pl-5">{a.conflicts.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
+                      </div>
+                    </Acc>
+                  )}
+                </div>
+              </section>
 
               <div className="flex flex-wrap gap-4 text-xs text-muted pt-2">
                 <button onClick={() => setShowReport(true)} className="underline">内容が違う</button>

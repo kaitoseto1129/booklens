@@ -1,69 +1,55 @@
-import Image from "next/image";
+import Link from "next/link";
+import { popularBooks } from "@/lib/db";
+import HomeSearch from "@/components/HomeSearch";
+import { estimateTotalSeconds, estimateQuickSeconds } from "@/lib/eta";
+
+export const dynamic = "force-dynamic";
 
 export default function Home() {
+  const popular = popularBooks(8);
+  const total = Math.max(1, Math.round(estimateTotalSeconds() / 60));
+  const quick = estimateQuickSeconds();
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="mx-auto max-w-3xl px-4">
+      <section className="pt-20 sm:pt-28 pb-12 text-center fade-up">
+        <h1 className="display text-4xl sm:text-5xl leading-tight">本から、必要な知識だけを。</h1>
+        <p className="mt-4 text-muted text-base sm:text-lg max-w-lg mx-auto">悩みを入れれば複数の本から答えを。タイトルを入れれば図解つき要約を。</p>
+        <div className="mt-8">
+          <HomeSearch />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <p className="mt-4 text-xs text-muted">
+          初めての本：速報版が約{quick}秒、完全版は約{total}分（Web収集→要約→事実確認）／ 一度調べた本：即表示
+        </p>
+      </section>
+
+      {popular.length > 0 && (
+        <section className="pb-16">
+          <h2 className="text-xs font-medium text-muted/80 tracking-widest uppercase mb-3">最近見られている本</h2>
+          <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {popular.map((b) => {
+              const authors = JSON.parse(b.authors) as string[];
+              return (
+                <li key={b.id}>
+                  <Link href={`/books/${b.id}`} className="card card-hover block p-3 h-full">
+                    <div className="flex gap-3">
+                      {b.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={b.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
+                      ) : (
+                        <div className="w-10 h-14 rounded bg-line" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium leading-snug line-clamp-2 font-display">{b.title}</div>
+                        <div className="text-xs text-muted truncate">{authors.join(", ")}</div>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

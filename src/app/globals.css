@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f7f5f0;
+  --bg-tint: #f1ede4;
+  --fg: #211f1b;
+  --muted: #77726a;
+  --card: #fffefb;
+  --line: #e7e2d7;
+  --line-strong: #d8d2c4;
+  --accent: #b04a26;
+  --accent-hover: #983f1f;
+  --accent-soft: #f6e9e1;
+  --book: #2f5d7c;
+  --book-soft: #e7f0f6;
+  --insight: #6a4b98;
+  --insight-soft: #efe9f8;
+  --good: #3f7d54;
+  --shadow-sm: 0 1px 2px rgba(40,34,26,.05), 0 1px 3px rgba(40,34,26,.04);
+  --shadow-md: 0 4px 14px -4px rgba(40,34,26,.12), 0 2px 6px -2px rgba(40,34,26,.06);
+  --shadow-lg: 0 18px 40px -12px rgba(40,34,26,.22);
+  --radius: 16px;
 }
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #14130f;
+    --bg-tint: #1a1814;
+    --fg: #eceae4;
+    --muted: #9d988e;
+    --card: #1d1b16;
+    --line: #33302a;
+    --line-strong: #423e36;
+    --accent: #e07c50;
+    --accent-hover: #ea8a5f;
+    --accent-soft: #38241a;
+    --book: #83b7d9;
+    --book-soft: #1a2732;
+    --insight: #b89fe2;
+    --insight-soft: #271f36;
+    --good: #6fb388;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-md: 0 6px 18px -6px rgba(0,0,0,.5);
+    --shadow-lg: 0 20px 44px -14px rgba(0,0,0,.6);
   }
 }
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-tint: var(--bg-tint);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-book: var(--book);
+  --color-book-soft: var(--book-soft);
+  --color-insight: var(--insight);
+  --color-insight-soft: var(--insight-soft);
+  --color-good: var(--good);
+  --radius-xl: var(--radius);
+}
 
+html { color-scheme: light dark; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+  font-feature-settings: "palt" 1;
+  letter-spacing: .01em;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+/* 明朝の見出しで編集的な品格を出す */
+.font-display, h1.display, h2.display {
+  font-family: var(--font-display), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-weight: 600;
+  letter-spacing: .015em;
+}
+::selection { background: var(--accent-soft); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.card-hover { transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease; }
+.card-hover:hover { box-shadow: var(--shadow-md); border-color: var(--line-strong); transform: translateY(-1px); }
+
+.tag-book { background: var(--book-soft); color: var(--book); }
+.tag-insight { background: var(--insight-soft); color: var(--insight); }
+.mermaid-box svg { max-width: 100%; height: auto; }
+
+/* 上質な下地：ごく淡いグラデーション */
+.app-bg::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(1100px 480px at 50% -8%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--bg-tint), var(--bg) 22%);
+}
+
+@keyframes pulse-soft { 0%,100% { opacity: .5 } 50% { opacity: 1 } }
+.pulse { animation: pulse-soft 1.6s ease-in-out infinite; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+.fade-up { animation: fade-up .4s ease both; }
+
+/* --- 動画プレイヤーのシーン演出 --- */
+@keyframes scene-in { from { opacity: 0; transform: translateY(10px) scale(.985) } to { opacity: 1; transform: none } }
+@keyframes kw-in { from { opacity: 0; letter-spacing: .2em; transform: translateY(6px) } to { opacity: 1; letter-spacing: normal; transform: none } }
+@keyframes rule-in { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+@keyframes item-in { from { opacity: 0; transform: translateX(-8px) } to { opacity: 1; transform: none } }
+.scene-in { animation: scene-in .5s cubic-bezier(.2,.7,.2,1) both; }
+.kw-in { animation: kw-in .6s cubic-bezier(.2,.7,.2,1) both; }
+.kw-rule { transform-origin: left; animation: rule-in .6s .15s cubic-bezier(.2,.7,.2,1) both; }
+.item-in { animation: item-in .45s cubic-bezier(.2,.7,.2,1) both; }
+.seek-fill { will-change: width; }
+@media (prefers-reduced-motion: reduce) {
+  .scene-in, .kw-in, .kw-rule, .item-in { animation: none !important; }
+  .seek-fill { transition: none !important; }
 }

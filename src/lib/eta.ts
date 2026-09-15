@@ -57,8 +57,8 @@ export function estimateRemaining(timeline: TimelineEntry[] | null, startedAt: s
   }
   // 任意ステップの期待値（未実行かつまだその段階に達していない場合）
   if (!done.has("gapfill") && active?.step !== "gapfill" && !done.has("extract") && active?.step !== "extract") remainingMs += expected("gapfill") * OPTIONAL.gapfill;
-  if (!done.has("revise") && active?.step !== "revise") remainingMs += (expected("revise") + expected("verify")) * OPTIONAL.revise;
-  return { elapsed, remaining: Math.max(5, Math.round(remainingMs / 1000)), steps };
+  const safeMs = Number.isFinite(remainingMs) ? remainingMs : SEQUENCE.reduce((s, st) => s + (done.has(st) ? 0 : expected(st)), 0);
+  return { elapsed, remaining: Math.max(5, Math.round(safeMs / 1000)), steps };
 }
 
 const LABELS: Record<string, string> = {

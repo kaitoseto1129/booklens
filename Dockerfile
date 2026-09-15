@@ -21,5 +21,6 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 RUN mkdir -p /data
 EXPOSE 3000
-ENV PORT=3000 HOSTNAME=0.0.0.0
-CMD ["node", "server.js"]
+ENV PORT=3000
+# HOSTNAME を実行時に 0.0.0.0 へ強制（Railway/Dockerがコンテナ名を入れると待受に失敗し502になるため）
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 PORT=3000 node server.js"]

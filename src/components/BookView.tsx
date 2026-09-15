@@ -14,6 +14,10 @@ import { singleBookSlides, timeEstimate } from "@/lib/slides";
 import Chat from "./Chat";
 import PersonaBox from "./PersonaBox";
 import Quiz from "./Quiz";
+import { loadU, setU, statsU, type Level } from "@/lib/understanding";
+import { loadContext, hasContext, type MyContext } from "@/lib/context";
+
+const emit = (name: string, detail?: string) => window.dispatchEvent(new CustomEvent(name, { detail }));
 
 type Status = {
   book: {
@@ -60,6 +64,7 @@ function Collapsible({ label, children }: { label: string; children: React.React
 
 const TOC = [
   { id: "conc", label: "結論" },
+  { id: "use", label: "どう使うか" },
   { id: "video", label: "動画で見る" },
   { id: "takeaways", label: "得られる3つ" },
   { id: "points", label: "重要ポイント" },
@@ -75,6 +80,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
   const [receivedAt, setReceivedAt] = useState(0);
   const [openPoint, setOpenPoint] = useState<number | null>(0);
   const [structTab, setStructTab] = useState<"diagram" | "visual">("diagram");
+  const [diagIdx, setDiagIdx] = useState(0);
   const [showSources, setShowSources] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [lib, setLib] = useState<string | null>(initialLibraryStatus);
@@ -82,6 +88,23 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
   const [video, setVideo] = useState<{ scenes: VideoSceneT[]; length: number } | null>(null);
   const [videoLoading, setVideoLoading] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [u, setUState] = useState<Record<string, Level>>({});
+  useEffect(() => {
+    const refresh = () => setUState(loadU(id));
+    const raf = requestAnimationFrame(refresh);
+    window.addEventListener("booklens-understanding", refresh);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("booklens-understanding", refresh); };
+  }, [id]);
+  const markU = (i: number, lvl: Level) => setU(id, i, u[String(i)] === lvl ? null : lvl);
+  const [ctx, setCtx] = useState<MyContext | null>(null);
+  useEffect(() => {
+    const refresh = () => setCtx(loadContext());
+    const raf = requestAnimationFrame(refresh);
+    window.addEventListener("booklens-context-saved", refresh);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("booklens-context-saved", refresh); };
+  }, []);
+  const hasCtx = ctx ? hasContext(ctx) : false;
+  const ctxLines = ctx ? [ctx.challenge, ctx.initiatives, ctx.marketing, ctx.kpi].filter((v): v is string => Boolean(v && v.trim())) : [];
 
   async function openVideo(len: 5 | 10 | 20, mode: "auto" | "derived" = "auto") {
     setVideoLoading(len);
@@ -210,6 +233,41 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
             </section>
           ); })()}
 
+          {/* この本をどう使いますか？（BookLensの核・前面に配置） */}
+          <section id="use" className="mt-5 card p-5 sm:p-6 border-accent/30 bg-accent-soft/20">
+            <div className="text-xs tracking-widest uppercase text-accent mb-1">BookLens</div>
+            <h2 className="font-display text-xl mb-1">この本をどう使いますか？</h2>
+            <p className="text-sm text-muted mb-4">読むだけで終わらせない。あなた自身・あなたの事業に当てはめて、次の行動まで変えます。</p>
+            <div className="grid sm:grid-cols-3 gap-2.5">
+              <button onClick={() => scrollToId("takeaways")} className="rounded-xl border border-line bg-card hover:border-accent p-4 text-left card-hover">
+                <div className="text-2xl mb-1">📖</div><div className="font-medium">本を理解する</div><div className="text-xs text-muted mt-0.5">要約・図解・動画で学ぶ</div>
+              </button>
+              <button onClick={() => { emit("booklens-mode", "apply"); scrollToId("ask"); }} className="rounded-xl border border-accent/50 bg-card hover:border-accent p-4 text-left card-hover">
+                <div className="text-2xl mb-1">✨</div><div className="font-medium">自分に活かす</div><div className="text-xs text-muted mt-0.5">自分の状況に当てはめる</div>
+              </button>
+              <button onClick={() => { emit("booklens-mode", "apply"); scrollToId("ask"); }} className="rounded-xl border border-accent/50 bg-card hover:border-accent p-4 text-left card-hover">
+                <div className="text-2xl mb-1">🏢</div><div className="font-medium">自社・事業に活かす</div><div className="text-xs text-muted mt-0.5">事業の意思決定に使う</div>
+              </button>
+            </div>
+            {hasCtx ? (
+              <div className="mt-4 rounded-xl border border-line bg-card p-4">
+                <div className="text-xs text-muted mb-1.5">この本を当てはめる先</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">🏢 {ctx?.name || "あなたの事業"}</span>
+                  <button onClick={() => emit("booklens-context-edit")} className="text-xs text-accent hover:underline">編集</button>
+                </div>
+                {ctxLines.length > 0 && <ul className="mt-2 text-xs text-muted space-y-0.5">{ctxLines.slice(0, 3).map((l, i) => <li key={i}>・{l}</li>)}</ul>}
+                <button onClick={() => { emit("booklens-apply", `「${book.title}」の考え方を${ctx?.name || "私の事業"}に当てはめて、いま最優先でやるべき改善策を具体的に出して。`); scrollToId("ask"); }}
+                  className="mt-3 rounded-full bg-accent text-white px-5 py-2 text-sm font-medium hover:opacity-90">この本から改善策を出す →</button>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-accent/40 bg-card p-4 flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-sm text-muted">自分・自社の情報を登録すると、この本をあなたの状況に当てはめて答えます。</span>
+                <button onClick={() => emit("booklens-context-edit")} className="shrink-0 rounded-full border border-accent text-accent px-4 py-2 text-sm hover:bg-accent-soft">事業・自分の情報を設定</button>
+              </div>
+            )}
+          </section>
+
           <div className="mt-8 grid lg:grid-cols-[minmax(0,1fr)_240px] gap-8 items-start">
             <main className="space-y-10 min-w-0">
               {/* 動画 */}
@@ -264,7 +322,12 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                         {open && (
                           <div className={`px-4 pb-4 text-sm ${lv1 ? "" : "-mt-1"}`}>
                             <Tag kind="book" /> <span className="ml-1">{p.body}</span><Refs refs={p.evidence} />
-                            <div className="mt-2">
+                            <div className="mt-3 flex flex-wrap gap-1.5 items-center">
+                              {([["got", "✓ 理解した"], ["review", "☆ 復習"], ["unclear", "？ わからない"]] as [Level, string][]).map(([lv, label]) => (
+                                <button key={lv} onClick={() => { markU(i, lv); if (lv === "unclear") window.dispatchEvent(new CustomEvent("booklens-explain", { detail: `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。` })); }}
+                                  className={`text-xs rounded-full px-2.5 py-1 border ${u[String(i)] === lv ? (lv === "got" ? "bg-good text-white border-transparent" : lv === "review" ? "bg-accent text-white border-transparent" : "bg-book text-white border-transparent") : "border-line text-muted hover:border-accent"}`}>{label}</button>
+                              ))}
+                              <span className="w-px h-4 bg-line mx-1" />
                               <button onClick={() => window.dispatchEvent(new CustomEvent("booklens-apply", { detail: `この考え方「${p.title}」を、自分の事業に当てはめると具体的に何をすべき？` }))} className="text-xs rounded-full border border-accent text-accent px-3 py-1 hover:bg-accent-soft">自分に当てはめる ✨</button>
                             </div>
                           </div>
@@ -280,7 +343,9 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                 <h2 className="font-display text-xl mb-3">登場人物・概念</h2>
                 <div className="grid sm:grid-cols-2 gap-2.5">
                   {a.brief180.concepts.map((c, i) => (
-                    <div key={i} className="card p-3.5"><div className="flex justify-between gap-2 items-baseline"><b>{c.name}</b><Stars n={c.importance} /></div><p className="text-sm text-muted mt-1">{c.description}<Refs refs={c.evidence} /></p></div>
+                    <div key={i} className="card p-3.5"><div className="flex justify-between gap-2 items-baseline"><b>{c.name}</b><Stars n={c.importance} /></div><p className="text-sm text-muted mt-1">{c.description}<Refs refs={c.evidence} /></p>
+                      <button onClick={() => window.dispatchEvent(new CustomEvent("booklens-explain", { detail: `「${c.name}」を、中学生でも分かるように、具体例つきでやさしく説明して。` }))} className="mt-2 text-xs text-accent hover:underline">やさしく説明 →</button>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -295,7 +360,20 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                       {analysis?.visuals && analysis.visuals.length > 0 && <button onClick={() => setStructTab("visual")} className={`rounded-full px-3 py-1 ${structTab === "visual" ? "bg-fg text-bg" : "border border-line text-muted"}`}>表で理解</button>}
                     </div>
                   </div>
-                  {structTab === "diagram" && a.diagrams.length > 0 && <div className="grid gap-4">{a.diagrams.map((d, i) => <Mermaid key={i} code={d.mermaid} title={d.title} caption={d.caption} />)}</div>}
+                  {structTab === "diagram" && a.diagrams.length > 0 && (
+                    a.diagrams.length === 1 ? (
+                      <Mermaid code={a.diagrams[0].mermaid} title={a.diagrams[0].title} caption={a.diagrams[0].caption} />
+                    ) : (
+                      <div>
+                        <div className="flex gap-1.5 flex-wrap mb-3">
+                          {a.diagrams.map((d, i) => (
+                            <button key={i} onClick={() => setDiagIdx(i)} className={`text-xs rounded-full px-3 py-1.5 ${diagIdx === i ? "bg-accent text-white" : "border border-line text-muted hover:border-accent"}`}>{d.title}</button>
+                          ))}
+                        </div>
+                        {(() => { const d = a.diagrams[Math.min(diagIdx, a.diagrams.length - 1)]; return <Mermaid key={diagIdx} code={d.mermaid} title={d.title} caption={d.caption} />; })()}
+                      </div>
+                    )
+                  )}
                   {structTab === "visual" && analysis?.visuals && analysis.visuals.length > 0 && <Visuals visuals={analysis.visuals} />}
                 </section>
               )}
@@ -341,10 +419,27 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                 <div className="card p-5"><div className="text-xs font-medium text-accent mb-1">なぜこの本が重要か</div><p className="text-sm">{a.why_care}</p></div>
               </section>
 
+              {/* 実践する（本 → 理解 → 自分の場合 → 行動） */}
+              <section id="practice" className="card p-5 space-y-4">
+                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                  <h2 className="font-display text-lg">この本をあなたが実践するなら</h2>
+                  <button onClick={() => { emit("booklens-apply", `「${book.title}」を${ctx?.name ? ctx.name + "で" : "私の状況で"}実践するための、具体的なSTEP（各STEPでやることと、その理由）を作って。`); scrollToId("ask"); }}
+                    className="text-xs rounded-full bg-accent text-white px-4 py-1.5 font-medium hover:opacity-90">✨ 私の場合のSTEPを作る</button>
+                </div>
+                <ol className="space-y-2.5">
+                  {a.action_items.map((t, i) => (
+                    <li key={i} className="flex gap-3 items-start rounded-xl border border-line p-3.5">
+                      <span className="shrink-0 rounded-lg bg-accent-soft text-accent font-display text-sm px-2.5 py-1">STEP {i + 1}</span>
+                      <span className="text-sm flex-1">{t}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="text-xs text-muted">本の内容 → 理解 → 自分の場合 → 具体的な行動、までBookLensの中で完結できます。</p>
+              </section>
+
               {/* 復習・クイズ */}
               <section id="review" className="card p-5 space-y-4">
-                <h2 className="font-display text-lg">覚える・実践する</h2>
-                <div><h3 className="font-medium text-sm text-muted mb-1">この本を読んだ後にやること</h3><ol className="list-decimal pl-5 space-y-1 text-sm">{a.action_items.map((t, i) => <li key={i}>{t}</li>)}</ol></div>
+                <h2 className="font-display text-lg">覚えているか確認する</h2>
                 <Quiz bookId={id} />
               </section>
 
@@ -370,7 +465,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
               )}
 
               {/* AIに質問 */}
-              <section id="ask"><Chat bookId={id} ready={done} /></section>
+              <section id="ask"><Chat bookId={id} ready={done} bookTitle={book.title} /></section>
 
               <div className="flex flex-wrap gap-4 text-xs text-muted pt-2">
                 <button onClick={() => setShowReport(true)} className="underline">内容が違う</button>
@@ -389,6 +484,23 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                   )))}
                 </div>
               </nav>
+              {(() => {
+                const stat = statsU(u, a.key_points.length);
+                return (
+                  <div className="card p-4">
+                    <div className="text-[11px] text-muted tracking-widest uppercase mb-2">自分の理解度</div>
+                    <div className="flex items-baseline gap-2"><span className="font-display text-2xl text-accent">{stat.pct}%</span><span className="text-xs text-muted">理解済み</span></div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-line overflow-hidden"><div className="h-full bg-good" style={{ width: `${stat.pct}%` }} /></div>
+                    {(stat.review.length > 0 || stat.unclear.length > 0) && (
+                      <div className="mt-3 text-xs space-y-1">
+                        {stat.unclear.map((i) => <button key={`u${i}`} onClick={() => scrollToId("points")} className="block text-left text-book hover:underline">？ {a.key_points[i]?.title}</button>)}
+                        {stat.review.map((i) => <button key={`r${i}`} onClick={() => scrollToId("points")} className="block text-left text-accent hover:underline">☆ {a.key_points[i]?.title}</button>)}
+                      </div>
+                    )}
+                    {stat.pct === 0 && stat.review.length === 0 && stat.unclear.length === 0 && <p className="text-xs text-muted mt-2">重要ポイントを「理解した／復習／わからない」で記録できます。</p>}
+                  </div>
+                );
+              })()}
               <button onClick={() => scrollToId("ask")} className="card card-hover w-full text-left p-4">
                 <div className="text-sm font-medium">✨ この本について質問</div>
                 <div className="text-xs text-muted mt-0.5">分からない所をAIに聞く</div>

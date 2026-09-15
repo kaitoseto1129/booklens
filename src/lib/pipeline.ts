@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import {
   type BookRow, type AnalysisRow, type TimelineEntry, findBookByKeys, insertBook, updateBook, createAnalysis, updateAnalysis, latestAnalysis,
-  replaceSources, recordStepDuration,
+  replaceSources, recordStepDuration, analysesStartedToday,
 } from "./db";
 import type { Candidate, BookFacts, PrefetchedSource } from "./books/types";
 import { fetchWork, fetchEditions, fetchEdition, fetchAuthor, lookupByIsbn, type EditionInfo } from "./books/openlibrary";
@@ -69,10 +69,23 @@ export async function ensureBook(c: Candidate): Promise<BookRow> {
 }
 
 /** 生成ジョブを開始（既に走っていればそれを返す）。 */
+/** 公開URLでの使いすぎ・課金暴走を防ぐ、1日あたりの新規生成上限（0で無効）。 */
+const DAILY_LIMIT = Number(process.env.BOOKLENS_DAILY_LIMIT ?? "40");
+export function dailyLimitReached(): boolean {
+  return DAILY_LIMIT > 0 && analysesStartedToday() >= DAILY_LIMIT;
+}
+
 export function startAnalysis(book: BookRow, force = false): AnalysisRow {
   const latest = latestAnalysis(book.id);
   if (latest && (latest.status === "running" || latest.status === "pending") && running.has(book.id)) return latest;
   if (latest && latest.status === "done" && !force) return latest;
+  // 新規に生成が発生する時だけ上限を判定（キャッシュ表示は対象外）
+  if (dailyLimitReached()) {
+    const capped = createAnalysis(book.id);
+    const msg = "本日の生成上限に達しました。みんなが無料で使えるように1日の生成数を制限しています。恐れ入りますが、時間をおいて（翌日）お試しください。";
+    updateAnalysis(capped.id, { status: "error", step: "error", step_label: "本日の上限に達しました", error: msg });
+    return { ...capped, status: "error", step: "error", step_label: "本日の上限に達しました", error: msg };
+  }
   const a = createAnalysis(book.id);
   const p = runPipeline(book, a)
     .catch((e: unknown) => {

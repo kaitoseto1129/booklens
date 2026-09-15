@@ -116,10 +116,19 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
     return () => obs.disconnect();
   }, [st]);
 
-  async function openVideo(len: 5 | 10 | 20, mode: "auto" | "derived" = "auto") {
+  async function openVideo(len: 5 | 10 | 20, mode: "auto" | "derived" | "ai" = "auto") {
     setVideoLoading(len);
     try {
-      const r = await fetch(`/api/books/${id}/video?length=${len}&mode=${mode}`);
+      // 裏で生成 → 短いポーリングで受け取る（同期の長時間リクエストを避けて502を防ぐ）
+      for (let i = 0; i < 60; i++) {
+        const r = await fetch(`/api/books/${id}/video?length=${len}&mode=${mode}`, { cache: "no-store" });
+        const d = (await r.json()) as { scenes?: VideoSceneT[]; length?: number; status?: string };
+        if (d.scenes) { setVideo({ scenes: d.scenes, length: d.length ?? len }); return; }
+        if (d.status !== "generating") break;
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+      // 生成が間に合わない/失敗時は即時の導出版で確実に表示
+      const r = await fetch(`/api/books/${id}/video?length=${len}&mode=derived`, { cache: "no-store" });
       const d = (await r.json()) as { scenes?: VideoSceneT[]; length?: number };
       if (d.scenes) setVideo({ scenes: d.scenes, length: d.length ?? len });
     } finally { setVideoLoading(null); }

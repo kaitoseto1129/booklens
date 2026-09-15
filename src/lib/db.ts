@@ -246,10 +246,22 @@ export function popularBooks(limit = 8): BookRow[] {
 }
 
 // ---------- analyses ----------
+export function getAnalysis(id: number): AnalysisRow | undefined {
+  return db().prepare("SELECT * FROM analyses WHERE id = ?").get(id) as AnalysisRow | undefined;
+}
+
 export function latestAnalysis(bookId: string): AnalysisRow | undefined {
   return db()
     .prepare("SELECT * FROM analyses WHERE book_id = ? ORDER BY version DESC, id DESC LIMIT 1")
     .get(bookId) as AnalysisRow | undefined;
+}
+
+/** 本日 実際に生成を開始した解析の件数（started_at が入ったもの＝APIを消費したもの）。コスト上限の判定に使う。 */
+export function analysesStartedToday(): number {
+  const row = db()
+    .prepare("SELECT COUNT(*) AS c FROM analyses WHERE started_at IS NOT NULL AND date(started_at) = date('now')")
+    .get() as { c: number };
+  return row?.c ?? 0;
 }
 
 export function createAnalysis(bookId: string): AnalysisRow {

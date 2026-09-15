@@ -13,12 +13,17 @@ export default function Home() {
     <div className="mx-auto max-w-3xl px-4">
       <section className="pt-20 sm:pt-28 pb-12 text-center fade-up">
         <h1 className="display text-4xl sm:text-5xl leading-tight">本から、必要な知識だけを。</h1>
-        <p className="mt-4 text-muted text-base sm:text-lg max-w-lg mx-auto">悩みを入れれば複数の本から答えを。タイトルを入れれば図解つき要約を。</p>
+        <p className="mt-4 text-muted text-base sm:text-lg max-w-lg mx-auto">本のタイトルを入れるだけ。AIが要約・図解・動画にまとめ、あなたの状況にまで当てはめます。</p>
         <div className="mt-8">
           <HomeSearch />
         </div>
-        <p className="mt-4 text-xs text-muted">
-          初めての本：速報版が約{quick}秒、完全版は約{total}分（Web収集→要約→事実確認）／ 一度調べた本：即表示
+        <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-muted">
+          {[["📖", "要点をやさしく要約"], ["📊", "図解でスッと理解"], ["🎬", "動画・音声で聴く"], ["✨", "自分・自社に当てはめる"]].map(([icon, label]) => (
+            <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5"><span>{icon}</span>{label}</span>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-muted/80">
+          はじめての本：要点は約{quick}秒で先に表示、くわしい完全版は約{total}分（Webで調べて→要約→事実確認）。一度調べた本はすぐ開けます。
         </p>
       </section>
 

@@ -17,6 +17,8 @@ import { computeConfidence } from "./ai/confidence";
 import { emptyUsage, hasApiKey } from "./ai/client";
 
 const running = new Map<string, Promise<void>>();
+/** 高速モード（既定ON）：Web調査を絞り、情報源整理と抽出を並列化、gapfillを省略。BOOKLENS_FAST=0 で厚めに。 */
+const FAST = process.env.BOOKLENS_FAST !== "0";
 
 /** 候補 → books 行。ISBN があれば openBD / NDL / Open Library で書誌を補完する。 */
 export async function ensureBook(c: Candidate): Promise<BookRow> {
@@ -239,32 +241,41 @@ async function runPipeline(book: BookRow, a: AnalysisRow) {
   updateBook(book.id, { source_type: mode });
   updateAnalysis(a.id, { dossier, fulltext_used: mode === "A" ? 1 : 0 });
 
-  P.step("sources", "情報源を整理しています", 44);
-  let sourceList = await extractSourceList(dossier, usage);
-
-  // 足りないものがあれば追加調査（目次・一次情報）
-  if (mode === "B") {
-    const missing: string[] = [];
-    if (!sourceList.toc_found) missing.push("table of contents");
-    if (sourceList.primary_source_count < 2) missing.push("publisher official description or author official page");
-    if (missing.length) {
-      P.step("gapfill", `追加で探しています：${missing.includes("table of contents") ? "目次" : "一次情報"}`, 50);
-      const extra = await gapFill(facts, dossier, missing, sourceList.sources.length + 1, usage);
-      if (extra && !/^\s*NOT FOUND\s*$/m.test(extra.trim()) ) {
-        dossier = `${dossier}\n\n---\n\n# ADDITIONAL RESEARCH\n${extra}`;
-        updateAnalysis(a.id, { dossier });
-        sourceList = await extractSourceList(dossier, usage);
+  let sourceList: Awaited<ReturnType<typeof extractSourceList>>;
+  let extraction: Awaited<ReturnType<typeof extractEvidence>>;
+  if (FAST) {
+    // 高速モード：情報源整理と抽出を並列（gapfillは省略）
+    P.step("extract", "情報源の整理と概念・主張の抽出を並行しています", 50);
+    [sourceList, extraction] = await Promise.all([
+      extractSourceList(dossier, usage),
+      extractEvidence(evidenceSystemBlock(facts, dossier, mode), usage),
+    ]);
+  } else {
+    P.step("sources", "情報源を整理しています", 44);
+    sourceList = await extractSourceList(dossier, usage);
+    // 足りないものがあれば追加調査（目次・一次情報）
+    if (mode === "B") {
+      const missing: string[] = [];
+      if (!sourceList.toc_found) missing.push("table of contents");
+      if (sourceList.primary_source_count < 2) missing.push("publisher official description or author official page");
+      if (missing.length) {
+        P.step("gapfill", `追加で探しています：${missing.includes("table of contents") ? "目次" : "一次情報"}`, 50);
+        const extra = await gapFill(facts, dossier, missing, sourceList.sources.length + 1, usage);
+        if (extra && !/^\s*NOT FOUND\s*$/m.test(extra.trim())) {
+          dossier = `${dossier}\n\n---\n\n# ADDITIONAL RESEARCH\n${extra}`;
+          updateAnalysis(a.id, { dossier });
+          sourceList = await extractSourceList(dossier, usage);
+        }
       }
     }
+    P.step("extract", "根拠から概念・主張・具体例を抽出しています", 56);
+    extraction = await extractEvidence(evidenceSystemBlock(facts, dossier, mode), usage);
   }
   replaceSources(book.id, a.id, sourceList.sources.map((s) => ({ ref: s.ref, source_type: s.type, title: s.title, url: s.url, tier: s.tier, snippet: s.summary })));
-
-  // ---- STEP 10-12: 抽出 → 生成 → 事実確認 → 必要なら再生成（最大2回） ----
-  const evidence = evidenceSystemBlock(facts, dossier, mode);
-  P.step("extract", "根拠から概念・主張・具体例を抽出しています", 56);
-  const extraction = await extractEvidence(evidence, usage);
   updateAnalysis(a.id, { extraction: JSON.stringify(extraction) });
 
+  // ---- STEP 10-12: 生成 → 事実確認（並列で図解） ----
+  const evidence = evidenceSystemBlock(facts, dossier, mode);
   P.step("summarize", "重要ポイントを整理して要約を書いています", 64);
   const analysis = await generateAnalysis(evidence, extraction, usage);
 

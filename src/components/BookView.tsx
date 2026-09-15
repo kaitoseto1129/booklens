@@ -79,7 +79,7 @@ const TOC = [
 export default function BookView({ id, initialLibraryStatus }: { id: string; initialLibraryStatus: string | null }) {
   const [st, setSt] = useState<Status | null>(null);
   const [receivedAt, setReceivedAt] = useState(0);
-  const [openPoint, setOpenPoint] = useState<number | null>(0);
+  const [openPoint, setOpenPoint] = useState<number | null>(-1);
   const [structTab, setStructTab] = useState<"diagram" | "visual">("diagram");
   const [diagIdx, setDiagIdx] = useState(0);
   const [showAllPoints, setShowAllPoints] = useState(false);
@@ -321,22 +321,27 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                         <button onClick={() => setOpenPoint(open ? -1 : i)} className="w-full text-left p-4 flex gap-3 items-start">
                           <span className="font-display text-xl text-accent shrink-0">{String(i + 1).padStart(2, "0")}</span>
                           <span className="flex-1 min-w-0">
-                            <span className="font-medium">{p.title}</span>
-                            <span className="ml-2 inline-block"><Stars n={p.importance} /></span>
-                            {lv1 && <span className="ml-2 text-[10px] font-semibold text-accent tracking-wider">必須</span>}
-                            {!open && <span className="block text-sm text-muted mt-0.5 line-clamp-2">{p.body}</span>}
+                            {/* 意味（平易な説明）を主役に。専門用語は小さなキーワードに降格 */}
+                            <span className={`font-medium leading-relaxed ${open ? "block" : "line-clamp-2"}`}>{p.body}</span>
+                            <span className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[11px] text-muted">キーワード</span>
+                              <span className="text-xs rounded-full bg-book-soft text-book px-2 py-0.5 font-medium">{p.title}</span>
+                              <Stars n={p.importance} />
+                              {lv1 && <span className="text-[10px] font-semibold text-accent tracking-wider">必須</span>}
+                            </span>
                           </span>
                           <span className="text-muted text-xs shrink-0 mt-1">{open ? "− 閉じる" : "詳しく"}</span>
                         </button>
                         {open && (
-                          <div className="px-4 pb-4 text-sm -mt-1">
-                            <Tag kind="book" /> <span className="ml-1">{p.body}</span><Refs refs={p.evidence} />
+                          <div className="px-4 pb-4 text-sm -mt-1 pl-[3.25rem]">
+                            {p.evidence && p.evidence.length > 0 && <p className="text-xs text-muted"><Tag kind="book" /> 出典：{p.evidence.join(", ")}</p>}
                             <div className="mt-3 flex flex-wrap gap-1.5 items-center">
                               {([["got", "✓ 理解した"], ["review", "☆ 復習"], ["unclear", "？ わからない"]] as [Level, string][]).map(([lv, label]) => (
                                 <button key={lv} onClick={() => { markU(i, lv); if (lv === "unclear") { emit("booklens-explain", `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。`); scrollToId("ask"); } }}
                                   className={`text-xs rounded-full px-2.5 py-1 border ${u[String(i)] === lv ? (lv === "got" ? "bg-good text-white border-transparent" : lv === "review" ? "bg-accent text-white border-transparent" : "bg-book text-white border-transparent") : "border-line text-muted hover:border-accent"}`}>{label}</button>
                               ))}
                               <span className="w-px h-4 bg-line mx-1" />
+                              <button onClick={() => { emit("booklens-explain", `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。`); scrollToId("ask"); }} className="text-xs rounded-full border border-line text-muted px-3 py-1 hover:border-accent">やさしく説明</button>
                               <button onClick={() => { emit("booklens-apply", `この考え方「${p.title}」を、自分の事業に当てはめると具体的に何をすべき？`); scrollToId("ask"); }} className="text-xs rounded-full border border-accent text-accent px-3 py-1 hover:bg-accent-soft">自分に当てはめる ✨</button>
                             </div>
                           </div>

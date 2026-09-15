@@ -87,7 +87,13 @@ export async function generateVideo(evidence: string, analysis: Analysis, length
 - 図解の目安：全シーンの半分以上を図解系にする。
 - **本の代名詞となる中心フレームワークは必ず専用の図解シーンにして、大きく主役として見せる**（例：顧客起点マーケティングなら「顧客ピラミッド（5セグ）」「9セグマップ」、Thinking in Betsなら「決断の質×結果の質」の2×2）。文章やキーワードで済ませない。該当する枠組みが情報源にあれば、matrix / flowchart / conceptmap / comparison のいずれかで必ず1シーン以上入れる。
 - そのフレームワークの図には、構成要素（ピラミッドの各段、マップの各象限など）をノード/セル/行として具体的に描く。
-- flowchart/conceptmap は Mermaid（ラベルは必ずダブルクォート、ノード12個以内、ラベル内に丸括弧や;を入れない）。matrix は x_axis/y_axis と quadrants[4]（[左上,右上,左下,右下]）。comparison は compare_titles[2] と compare[]。
+- flowchart/conceptmap は Mermaid（ラベルは必ずダブルクォート、ラベル内に丸括弧や;を入れない）。matrix は x_axis/y_axis と quadrants[4]（[左上,右上,左下,右下]）。comparison は compare_titles[2] と compare[]。
+- 図は中学生が一目で理解できることを最優先にする：
+  ・ラベルは専門用語を避け、日常のことばで書く。専門語が必要なら「専門語＝やさしい言い換え」の形にする。
+  ・1つの図は1つの関係だけを表す（原因→結果／前→後／全体→部分／AとBの対比 のどれか一つ）。詰め込まない。
+  ・ノードは6個以内、各ラベルは15字以内、できれば一言。
+  ・矢印は関係が伝わるように使う（枝分かれや対立が分かるように）。
+  ・captionは「この図がいちばん言いたいこと」を中学生向けに1文で。可能なら身近なたとえを1つ入れる。
 - chapter は章の先頭シーンにだけタイトルを入れる。
 - 情報源の範囲内のみ。数値や具体例を捏造しない。日本語。`),
     messages: [{ role: "user", content: `# 既存の要約\n${JSON.stringify(analysis, null, 1)}\n\n${length}分の動画台本を作って。` }],

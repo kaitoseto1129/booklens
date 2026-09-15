@@ -116,7 +116,13 @@ Produce ONLY these sections in Japanese, following the schema: ai_insight, diagr
 Context in the user message: the Pass-1 extraction AND the already-written core+depth of the analysis. Do not repeat them — build on them.
 Guidance:
 - ai_insight: clearly YOUR interpretation, not the book. applications = how to apply the ideas; counterarguments = real weaknesses/objections; evidence_check = where the author's claims align or diverge from current research (only as far as the dossier + general knowledge reasonably support; do not assert specifics you can't back).
-- diagrams: 3–5 Mermaid diagrams that make the structure visible: (1) a concept map, (2) the central framework/process as a flow, (3) a comparison or structure, (4) a cause→effect or relationship map, (5) a timeline/stages if the book has them. Prefer MORE diagrams. Rules: "flowchart TD"/"flowchart LR" (mindmap only if truly hierarchical); wrap EVERY node label in double quotes; ≤ 12 nodes each; no HTML, no semicolons or parentheses inside labels. Japanese labels fine.
+- diagrams: 3–5個の図で本の骨組みを見せる：(1)概念マップ (2)中心の枠組み/流れ (3)比較や構造 (4)原因→結果 (5)段階/時系列（本にあれば）。Mermaid記法："flowchart TD"/"flowchart LR"（真に階層的な時だけmindmap）；全ノードのラベルはダブルクォートで囲む；ラベル内に丸括弧や;は入れない；HTML禁止。
+- 図は中学生が一目で理解できることを最優先にする：
+  ・ラベルは専門用語を避け、日常のことばで書く。専門語が必要なら「専門語＝やさしい言い換え」の形にする。
+  ・1つの図は1つの関係だけを表す（原因→結果／前→後／全体→部分／AとBの対比 のどれか一つ）。詰め込まない。
+  ・ノードは6個以内、各ラベルは15字以内、できれば一言。
+  ・矢印は関係が伝わるように使う（枝分かれや対立が分かるように）。
+  ・captionは「この図がいちばん言いたいこと」を中学生向けに1文で。可能なら身近なたとえを1つ入れる。
 - narration: a spoken-style script for a 2–3 minute audio explainer, 8–12 short slides (intro → the single most important thing → each key point → a today-action → closing). Write it the way a narrator would SPEAK it (plain, warm, no markdown, no bullet symbols), each slide's script 2–4 sentences. It must stay within the evidence like everything else.
 - quotes: only verbatim text present in the dossier, each ≤ 40 words / 80 Japanese characters, max 4. If none are in the dossier, return [].
 - unverified / conflicts: be honest and specific about what the sources could not establish and where they disagree.`;
@@ -140,7 +146,8 @@ Pick the blocks that best fit THIS book. Aim for variety. Concrete guidance:
 - "comparison": a central A vs B the book draws (e.g. ポーカー的思考 vs チェス的思考). 3–6 aspects.
 - "stats": only if the sources actually give numbers (percentages, results). Otherwise skip — never invent numbers.
 - "checklist": concrete "今日から実践" items (4–7).
-Rules: fill ONLY the fields for each block's kind; leave the others as empty strings/arrays. Keep text tight and scannable. Nothing outside the evidence. Japanese output.`;
+Rules: fill ONLY the fields for each block's kind; leave the others as empty strings/arrays. Keep text tight and scannable. Nothing outside the evidence. Japanese output.
+中学生でもわかるように：専門用語は避けて日常のことばで、各セル/行/ラベルは短く一言、1つの図は1つのことだけを伝える。caption は身近なたとえを添えて1文で。`;
 
 export const QA_TASK = `# TASK
 You are an independent fact-checker. Compare the ANALYSIS (JSON in the user message) against the EVIDENCE DOSSIER above.

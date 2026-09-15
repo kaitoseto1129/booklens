@@ -261,7 +261,14 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                           </span>
                           {!lv1 && <span className="text-muted text-sm">{open ? "−" : "+"}</span>}
                         </button>
-                        {open && <div className={`px-4 pb-4 text-sm ${lv1 ? "" : "-mt-1"}`}><Tag kind="book" /> <span className="ml-1">{p.body}</span><Refs refs={p.evidence} /></div>}
+                        {open && (
+                          <div className={`px-4 pb-4 text-sm ${lv1 ? "" : "-mt-1"}`}>
+                            <Tag kind="book" /> <span className="ml-1">{p.body}</span><Refs refs={p.evidence} />
+                            <div className="mt-2">
+                              <button onClick={() => window.dispatchEvent(new CustomEvent("booklens-apply", { detail: `この考え方「${p.title}」を、自分の事業に当てはめると具体的に何をすべき？` }))} className="text-xs rounded-full border border-accent text-accent px-3 py-1 hover:bg-accent-soft">自分に当てはめる ✨</button>
+                            </div>
+                          </div>
+                        )}
                       </li>
                     );
                   })}

@@ -160,6 +160,21 @@ Rules of thumb:
 - Style/wording → low.
 verdict = "revise" if any high-severity issue exists or groundedness < 70 or hallucination_risk > 35; else "accept".`;
 
+export const APPLY_TASK = `# APPLY MODE（自分・自社に当てはめる）
+ユーザーは、この本の考え方を自分の状況（別ブロック「ユーザーの状況」）に当てはめ、具体的に何をすべきかを知りたい。
+手順：
+1. まず、本のどの考え方がこの人に効くかを一言で。
+2. その考え方をユーザーの事業・立場のことばに翻訳する。
+3. 「で、何をやるか」を実行できる粒度の施策3〜5個に落とす（チャネル／メッセージ例／KPI／順番など具体的に）。
+4. 本に書いてある内容(BOOK)と、AIによる当てはめ(AI INSIGHT)を区別する。
+5. ユーザーの状況に無い前提は勝手に作らない。必要なら「〜が分かればもっと具体化できる」と添える。
+日本語。前置きは短く、すぐ本題に。`;
+
+export function applyContextBlock(context: string) {
+  return `# ユーザーの状況（この人の事業・立場・課題）
+${context}`;
+}
+
 export function quickInstructions() {
   return `Using ONLY the pre-fetched sources in the user message (publisher/library description, encyclopedia extract), write a provisional 30-second overview in Japanese. Do not add knowledge from memory. If the sources are thin, keep it short and say so in "note".`;
 }

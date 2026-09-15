@@ -10,7 +10,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/books/[id]/ask"
   const a = latestAnalysis(id);
   if (!book || !a || a.status !== "done" || !a.content || !a.dossier)
     return Response.json({ error: "analysis not ready" }, { status: 409 });
-  const { question } = (await req.json()) as { question: string };
+  const { question, context } = (await req.json()) as { question: string; context?: string };
   if (!question?.trim()) return Response.json({ error: "question required" }, { status: 400 });
 
   const facts: BookFacts = {
@@ -22,7 +22,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/books/[id]/ask"
   const history: Anthropic.MessageParam[] = listChat(id).slice(-12).map((m) => ({ role: m.role, content: m.content }));
   appendChat(id, "user", question);
 
-  const stream = askStream(evidence, a.content, history, question);
+  const stream = askStream(evidence, a.content, history, question, context && context.trim() ? context.trim() : undefined);
   const encoder = new TextEncoder();
   let full = "";
   const body = new ReadableStream<Uint8Array>({

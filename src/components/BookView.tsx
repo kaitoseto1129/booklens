@@ -105,8 +105,16 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
     window.addEventListener("booklens-context-saved", refresh);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("booklens-context-saved", refresh); };
   }, []);
+  const [askVisible, setAskVisible] = useState(false);
   const hasCtx = ctx ? hasContext(ctx) : false;
   const ctxLines = ctx ? [ctx.challenge, ctx.initiatives, ctx.marketing, ctx.kpi].filter((v): v is string => Boolean(v && v.trim())) : [];
+  useEffect(() => {
+    const el = document.getElementById("ask");
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setAskVisible(e.isIntersecting), { rootMargin: "0px 0px -35% 0px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [st]);
 
   async function openVideo(len: 5 | 10 | 20, mode: "auto" | "derived" = "auto") {
     setVideoLoading(len);
@@ -167,7 +175,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       {/* ヘッダー（表紙ヒーロー） */}
-      <header className="relative flex gap-5 rounded-2xl overflow-hidden p-5 -mx-1">
+      <header className="relative flex gap-4 sm:gap-5 rounded-2xl overflow-hidden p-4 sm:p-5 -mx-1">
         {book.cover_url && (
           <div className="absolute inset-0 -z-10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -180,7 +188,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
           <img src={book.cover_url} alt="" className="w-24 h-36 object-cover rounded-lg shadow-md shrink-0" />
         ) : <div className="w-24 h-36 rounded-lg bg-line shrink-0" />}
         <div className="min-w-0 flex-1">
-          <h1 className="display text-3xl leading-tight">{book.title}</h1>
+          <h1 className="display text-2xl sm:text-3xl leading-tight">{book.title}</h1>
           {book.subtitle && <p className="text-muted">{book.subtitle}</p>}
           <p className="mt-1 text-sm flex items-center gap-2">
             {book.author_image && (
@@ -224,7 +232,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
             <section id="conc" className="mt-6 card p-6 sm:p-8 border-accent/40 relative overflow-hidden">
               <div className="absolute inset-x-0 top-0 h-1.5 bg-accent" />
               <div className="text-xs tracking-widest uppercase text-accent mb-3">この本を一言でいうと？</div>
-              <p className="display text-2xl sm:text-[1.9rem] leading-snug">{a.most_important.message}</p>
+              <p className="display text-xl sm:text-2xl md:text-[1.9rem] leading-snug">{a.most_important.message}</p>
               <p className="mt-4 text-sm text-muted max-w-2xl">{a.most_important.explanation}</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <button onClick={() => openVideo(10)} disabled={videoLoading !== null} className="rounded-full bg-accent text-white px-5 py-2.5 text-sm font-medium disabled:opacity-50">▶ 動画で見る</button>
@@ -374,7 +382,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
               <section id="apply" className="card p-6 border-accent/40 bg-accent-soft/20 space-y-5">
                 <div>
                   <div className="text-xs tracking-widest uppercase text-accent mb-1">BookLens の使いどころ</div>
-                  <h2 className="font-display text-2xl">✨ この本をあなたに当てはめる</h2>
+                  <h2 className="font-display text-xl sm:text-2xl">✨ この本をあなたに当てはめる</h2>
                   <p className="text-sm text-muted mt-1">あなたの状況と、この本の知識を組み合わせて、次にやるべきことを提案します。</p>
                   <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
                     <button onClick={() => { emit("booklens-apply", `「${book.title}」の考え方を、私自身の状況に当てはめて、次にやるべきことを提案して。`); scrollToId("ask"); }} className="rounded-xl bg-card border border-accent/50 hover:border-accent p-4 text-left card-hover"><div className="text-2xl mb-1">✨</div><div className="font-medium">自分に活かす</div><div className="text-xs text-muted mt-0.5">自分の状況に当てはめる</div></button>
@@ -506,8 +514,8 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
         </>
       )}
 
-      {/* フローティングAIボタン */}
-      {done && (
+      {/* フローティングAIボタン（チャットが画面内のときは隠す） */}
+      {done && !askVisible && (
         <button onClick={() => scrollToId("ask")} className="fixed bottom-5 right-5 z-40 rounded-full bg-accent text-white shadow-lg px-4 py-3 text-sm font-medium hover:opacity-90">✨ 質問</button>
       )}
 

@@ -40,7 +40,8 @@ export const GROUNDING_RULES = `# GROUNDING RULES (non-negotiable)
 - If something is not supported by the dossier, say so explicitly (put it in "unverified") instead of guessing. Never invent chapter titles. If the dossier has no table of contents, chapters must be an empty array and chapters_verified=false.
 - Where sources disagree, do not pick a winner silently: record it in "conflicts".
 - Source priority: tier 1 (book text, author official, publisher official, licensed excerpts) > tier 2 (interviews, universities, libraries, author talks) > tier 3 (major-media / reputable reviews, educational material) > tier 4 (general reviews, blogs, forums). Never base an important claim on tier-4 sources alone.
-- Distinguish BOOK (what the book says) from AI INSIGHT (your interpretation/application). Anything not in the dossier that you still consider valuable goes ONLY under ai_insight.
+- Distinguish what the book says from your own interpretation/application. Anything not in the dossier that you still consider valuable goes ONLY under ai_insight.
+- Do NOT print the English tokens "BOOK" or "AI INSIGHT" (or similar English labels) inside any Japanese text field; the book-vs-AI distinction is carried by the JSON structure itself, not by inline labels.
 - Prefer being correct over being complete. Short and true beats long and plausible.
 - Quotes: only verbatim text present in the dossier, each at most 40 words / 80 Japanese characters, max 4. Never reproduce long passages.
 - Write all user-facing text in natural Japanese (です・ます調は使わず、簡潔な「だ・である」調または体言止め). Keep original-language terms in parentheses where useful.`;
@@ -166,7 +167,7 @@ export const APPLY_TASK = `# APPLY MODE（自分・自社に当てはめる）
 1. まず、本のどの考え方がこの人に効くかを一言で。
 2. その考え方をユーザーの事業・立場のことばに翻訳する。
 3. 「で、何をやるか」を実行できる粒度の施策3〜5個に落とす（チャネル／メッセージ例／KPI／順番など具体的に）。
-4. 本に書いてある内容(BOOK)と、AIによる当てはめ(AI INSIGHT)を区別する。
+4. 本に書いてある内容（「本の内容」）と、AIによる当てはめ・提案（「AIの見解」）を区別して示す。
 5. ユーザーの状況に無い前提は勝手に作らない。必要なら「〜が分かればもっと具体化できる」と添える。
 日本語。前置きは短く、すぐ本題に。`;
 
@@ -182,6 +183,6 @@ export function quickInstructions() {
 export const ASK_TASK = `# TASK
 Answer the user's question about this book in Japanese.
 - Prioritise the evidence dossier and the analysis. Cite S-refs in parentheses where helpful.
-- If the answer is not in the evidence, say clearly 「この点は取得済みの情報源では確認できません」 and, if you offer a general perspective, label it 「AI INSIGHT」.
-- Applying the book's ideas to the user's own situation is welcome — mark that part as AI INSIGHT too.
-- Be concise: short paragraphs or bullets, no preamble.`;
+- If the answer is not in the evidence, say clearly 「この点は取得済みの情報源では確認できません」 and, if you offer a general perspective, label it 「AIの見解」.
+- Applying the book's ideas to the user's own situation is welcome — mark that part as 「AIの見解」 too.
+- Be concise: short paragraphs or bullets, no preamble. Avoid English jargon; if a book uses an English term, add a short Japanese gloss.`;

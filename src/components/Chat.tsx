@@ -5,7 +5,7 @@ import ContextEditor from "./ContextEditor";
 import { loadContext, hasContext, contextToText } from "@/lib/context";
 
 type Msg = { role: "user" | "assistant"; content: string };
-const SUGGEST_BOOK = ["この本の中心概念を一番簡単に説明すると？", "第1章のポイントは？", "著者の主張の弱点は？"];
+const SUGGEST_BOOK = ["この本がいちばん言いたいことは？", "第1章のポイントは？", "この主張に弱点はある？"];
 const SUGGEST_APPLY = ["この本の考え方を、今の課題の解決にどう使う？", "うちの事業ならどこから実行する？", "この本を前提に90日計画を作って", "この著者なら今の事業をどう評価する？"];
 
 export default function Chat({ bookId, ready, bookTitle }: { bookId: string; ready: boolean; bookTitle?: string }) {
@@ -160,7 +160,7 @@ export default function Chat({ bookId, ready, bookTitle }: { bookId: string; rea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={!ready || busy}
-            placeholder={listening ? "話してください…" : (mode === "apply" ? "例：この考え方をうちの集客に使うには？" : "例：この本でいうResultingって何？")}
+            placeholder={listening ? "話してください…" : (mode === "apply" ? "例：この考え方をうちの集客に使うには？" : "例：いちばん大事な主張をひとことで言うと？")}
             className="w-full rounded-full border border-line bg-bg pl-4 pr-11 py-2.5 text-sm outline-none focus:border-accent disabled:opacity-60"
           />
           {voiceOK && (

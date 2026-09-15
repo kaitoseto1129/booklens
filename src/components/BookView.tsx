@@ -47,7 +47,7 @@ function Stars({ n }: { n: number }) {
   return <span className="text-[11px] text-muted" title={label}>{"★".repeat(v)}{"☆".repeat(5 - v)}</span>;
 }
 const Tag = ({ kind }: { kind: "book" | "insight" }) => (
-  <span className={`text-[10px] font-semibold tracking-wider rounded px-1.5 py-0.5 ${kind === "book" ? "tag-book" : "tag-insight"}`}>{kind === "book" ? "BOOK" : "AI INSIGHT"}</span>
+  <span className={`text-[10px] font-semibold rounded px-1.5 py-0.5 ${kind === "book" ? "tag-book" : "tag-insight"}`}>{kind === "book" ? "本の内容" : "AIの見解"}</span>
 );
 const Refs = ({ refs }: { refs?: string[] }) => (refs && refs.length ? <span className="text-[11px] text-muted ml-1">({refs.join(", ")})</span> : null);
 
@@ -334,7 +334,7 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                         </button>
                         {open && (
                           <div className="px-4 pb-4 text-sm -mt-1 pl-[3.25rem]">
-                            {p.evidence && p.evidence.length > 0 && <p className="text-xs text-muted"><Tag kind="book" /> 出典：{p.evidence.join(", ")}</p>}
+                            {p.evidence && p.evidence.length > 0 && <p className="text-xs text-muted">出典：{p.evidence.join(", ")}</p>}
                             <div className="mt-3 flex flex-wrap gap-1.5 items-center">
                               {([["got", "✓ 理解した"], ["review", "☆ 復習"], ["unclear", "？ わからない"]] as [Level, string][]).map(([lv, label]) => (
                                 <button key={lv} onClick={() => { markU(i, lv); if (lv === "unclear") { emit("booklens-explain", `「${p.title}」を、中学生でも分かるように、具体例つきでやさしく説明して。`); scrollToId("ask"); } }}
@@ -452,13 +452,13 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
                   <Acc title={<><Tag kind="insight" /> <span className="ml-1">応用・反論（AIによる視点）</span></>}>
                     {a.ai_insight.applications.length > 0 && <div><h4 className="font-medium mb-1">応用の視点</h4><ul className="list-disc pl-5 space-y-1">{a.ai_insight.applications.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
                     {a.ai_insight.counterarguments.length > 0 && <div><h4 className="font-medium mb-1">反論・弱点</h4><ul className="list-disc pl-5 space-y-1">{a.ai_insight.counterarguments.map((t, i) => <li key={i}>{t}</li>)}</ul></div>}
-                    {a.ai_insight.evidence_check && <div><h4 className="font-medium mb-1">Evidence Check</h4><p>{a.ai_insight.evidence_check}</p></div>}
+                    {a.ai_insight.evidence_check && <div><h4 className="font-medium mb-1">根拠の確かさ</h4><p>{a.ai_insight.evidence_check}</p></div>}
                   </Acc>
                   <Acc title="今日から使える1つ・なぜ重要か">
                     <div><h4 className="font-semibold mb-1">今日から使える1つ</h4><p className="font-medium">{a.today_action.action}</p><p className="text-muted mt-1">{a.today_action.why}</p></div>
                     <div><h4 className="font-semibold mb-1">なぜこの本が重要か</h4><p>{a.why_care}</p></div>
                   </Acc>
-                  <Acc title="立場を変えて読む（ペルソナ別）"><PersonaBox bookId={id} /></Acc>
+                  <Acc title="立場を変えて読む（経営者・新人など）"><PersonaBox bookId={id} /></Acc>
                   <Acc title="理解度をクイズで確認"><Quiz bookId={id} /></Acc>
                   {a.quotes.length > 0 && (
                     <Acc title="印象的な引用">
@@ -532,16 +532,16 @@ export default function BookView({ id, initialLibraryStatus }: { id: string; ini
           {conf && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
               <div className="card p-2"><div className="text-xs text-muted">総合</div><b>{conf.overall}</b></div>
-              <div className="card p-2"><div className="text-xs text-muted">Groundedness</div><b>{conf.groundedness}</b></div>
-              <div className="card p-2"><div className="text-xs text-muted">Coverage</div><b>{conf.coverage}</b></div>
-              <div className="card p-2"><div className="text-xs text-muted">Source Quality</div><b>{conf.source_quality}</b></div>
+              <div className="card p-2"><div className="text-xs text-muted">情報源との一致</div><b>{conf.groundedness}</b></div>
+              <div className="card p-2"><div className="text-xs text-muted">網羅度</div><b>{conf.coverage}</b></div>
+              <div className="card p-2"><div className="text-xs text-muted">情報源の質</div><b>{conf.source_quality}</b></div>
               <p className="col-span-full text-xs text-muted">{conf.level_label}：{conf.basis}</p>
             </div>
           )}
           <ul className="space-y-2 text-sm">
             {st.sources.map((s) => (
               <li key={s.id} className="border-b border-line pb-2">
-                <div className="flex gap-2 items-center flex-wrap"><span className="text-xs text-muted">{s.ref}</span><span className="text-xs rounded px-1.5 bg-line">Tier {s.tier} {TIER_LABEL[s.tier]}</span><span className="text-xs rounded px-1.5 bg-line">{TYPE_LABEL[s.source_type] ?? s.source_type}</span></div>
+                <div className="flex gap-2 items-center flex-wrap"><span className="text-xs text-muted">{s.ref}</span><span className="text-xs rounded px-1.5 bg-line">{TIER_LABEL[s.tier]}</span><span className="text-xs rounded px-1.5 bg-line">{TYPE_LABEL[s.source_type] ?? s.source_type}</span></div>
                 {s.url ? <a href={s.url} target="_blank" rel="noreferrer" className="underline break-all">{s.title ?? s.url}</a> : <span>{s.title}</span>}
                 {s.snippet && <p className="text-xs text-muted mt-0.5">{s.snippet}</p>}
               </li>

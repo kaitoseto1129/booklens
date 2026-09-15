@@ -29,6 +29,7 @@ export default function SlidePlayer({ slides, onClose }: { slides: Slide[]; onCl
     const synth = window.speechSynthesis;
     if (!synth) { onEnd(); return; }
     synth.cancel();
+    try { synth.resume(); } catch { /* 一時停止解除 */ }
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP"; u.rate = rate;
     if (voiceRef.current) u.voice = voiceRef.current;
@@ -41,18 +42,33 @@ export default function SlidePlayer({ slides, onClose }: { slides: Slide[]; onCl
     setIdx((i) => (i + 1 >= slides.length ? (setPlaying(false), i) : i + 1));
   }, [slides.length]);
 
+  const [nudge, setNudge] = useState(0);
   useEffect(() => {
     if (!playing) { window.speechSynthesis?.cancel(); return; }
     const slide = slides[idx];
     let cancelled = false;
     if (ttsOK && typeof window !== "undefined" && window.speechSynthesis) {
       speak(slide.narration, () => { if (!cancelled && playingRef.current) advance(); });
-      return () => { cancelled = true; window.speechSynthesis?.cancel(); };
+      const keepAlive = setInterval(() => { try { if (window.speechSynthesis.speaking) window.speechSynthesis.resume(); } catch { /* noop */ } }, 8000);
+      return () => { cancelled = true; clearInterval(keepAlive); window.speechSynthesis?.cancel(); };
     }
     const ms = Math.max(3500, slide.narration.length * 90);
     const t = setTimeout(() => { if (!cancelled && playingRef.current) advance(); }, ms);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [idx, playing, ttsOK, slides, speak, advance]);
+  }, [idx, playing, ttsOK, slides, speak, advance, nudge]);
+
+  // タブから戻った時に読み上げを復帰
+  useEffect(() => {
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      if (!playingRef.current || !window.speechSynthesis) return;
+      try { window.speechSynthesis.resume(); } catch { /* noop */ }
+      if (!window.speechSynthesis.speaking) setNudge((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

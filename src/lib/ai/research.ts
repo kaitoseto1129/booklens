@@ -5,7 +5,7 @@ import { researchInstructions, prefetchedBlock, gapFillInstructions } from "./pr
 import { SourceListSchema } from "./schemas";
 import type { BookFacts, PrefetchedSource } from "../books/types";
 
-const MAX_CONTINUATIONS = 4;
+const MAX_CONTINUATIONS = 2;
 
 /** Bタイプ：web_search / web_fetch で根拠資料（dossier）を作る。 */
 export async function buildDossier(
@@ -20,8 +20,8 @@ export async function buildDossier(
 
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: userText }];
   const tools = [
-    { type: "web_search_20260209" as const, name: "web_search" as const, max_uses: 10 },
-    { type: "web_fetch_20260209" as const, name: "web_fetch" as const, max_uses: 8, max_content_tokens: 20000 },
+    { type: "web_search_20260209" as const, name: "web_search" as const, max_uses: 6 },
+    { type: "web_fetch_20260209" as const, name: "web_fetch" as const, max_uses: 4, max_content_tokens: 16000 },
   ];
 
   let response = await client.messages.create({

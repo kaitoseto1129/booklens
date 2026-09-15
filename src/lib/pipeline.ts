@@ -17,7 +17,6 @@ import { computeConfidence } from "./ai/confidence";
 import { emptyUsage, hasApiKey } from "./ai/client";
 
 const running = new Map<string, Promise<void>>();
-const MAX_REVISIONS = 2;
 
 /** 候補 → books 行。ISBN があれば openBD / NDL / Open Library で書誌を補完する。 */
 export async function ensureBook(c: Candidate): Promise<BookRow> {
@@ -254,23 +253,17 @@ async function runPipeline(book: BookRow, a: AnalysisRow) {
   updateAnalysis(a.id, { extraction: JSON.stringify(extraction) });
 
   P.step("summarize", "重要ポイントを整理して要約を書いています", 64);
-  let analysis = await generateAnalysis(evidence, extraction, usage);
-  P.step("verify", "内容を情報源と照合しています", 80);
-  let qa = await checkAnalysis(evidence, analysis, usage);
-  for (let i = 0; i < MAX_REVISIONS && qa.verdict === "revise"; i++) {
-    P.step("revise", `指摘を反映して書き直しています（${i + 1}/${MAX_REVISIONS}）`, 86 + i * 5);
-    analysis = await generateAnalysis(evidence, extraction, usage, { qa, previous: analysis });
-    qa = await checkAnalysis(evidence, analysis, usage);
-  }
+  const analysis = await generateAnalysis(evidence, extraction, usage);
 
-  // ---- STEP 12.5: 可視化（表・2×2・プロセス等） ----
-  P.step("visuals", "図解・表にまとめています", 94);
-  let visuals = null;
-  try {
-    visuals = await generateVisuals(evidence, analysis, extraction, usage);
-  } catch (e) {
-    console.warn("[pipeline] visuals failed", e);
-  }
+  // 事実確認と図解生成を並列実行（速度優先）。書き直しループは廃止（抽出＋根拠ルールで品質担保）。
+  P.step("verify", "内容の確認と図解を作成しています", 84);
+  const [qa, visuals] = await Promise.all([
+    checkAnalysis(evidence, analysis, usage),
+    generateVisuals(evidence, analysis, extraction, usage).catch((e) => {
+      console.warn("[pipeline] visuals failed", e);
+      return null;
+    }),
+  ]);
 
   // ---- STEP 13: 保存 ----
   const confidence = computeConfidence(mode, sourceList, qa);

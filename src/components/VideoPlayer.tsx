@@ -96,23 +96,46 @@ export default function VideoPlayer({ bookId, scenes, length, onClose }: { bookI
   }, []);
 
   const advance = useCallback(() => setIdx((i) => (i + 1 >= scenes.length ? (setPlaying(false), i) : i + 1)), [scenes.length]);
+  const [nudge, setNudge] = useState(0); // タブ復帰時に現在シーンの読み上げをやり直すためのトリガ
 
   useEffect(() => {
     if (!playing || ask) { window.speechSynthesis?.cancel(); return; }
     let cancelled = false;
     const sc = scenes[idx];
     if (ttsOK && typeof window !== "undefined" && window.speechSynthesis && sc.narration) {
-      const synth = window.speechSynthesis; synth.cancel();
+      const synth = window.speechSynthesis;
+      synth.cancel();
+      try { synth.resume(); } catch { /* 一時停止状態の解除 */ }
       const u = new SpeechSynthesisUtterance(sc.narration);
       u.lang = "ja-JP"; u.rate = rate; if (voiceRef.current) u.voice = voiceRef.current;
       u.onend = () => { if (!cancelled && playingRef.current) advance(); };
       u.onerror = () => { setTtsOK(false); };
       synth.speak(u);
-      return () => { cancelled = true; synth.cancel(); };
+      // Chromeは長文や約15秒で読み上げが止まるため、定期的に resume して継続させる
+      const keepAlive = setInterval(() => { try { if (synth.speaking) synth.resume(); } catch { /* noop */ } }, 8000);
+      return () => { cancelled = true; clearInterval(keepAlive); synth.cancel(); };
     }
     const t = setTimeout(() => { if (!cancelled && playingRef.current) advance(); }, secs[idx] * 1000);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [idx, playing, ask, ttsOK, rate, scenes, secs, advance]);
+  }, [idx, playing, ask, ttsOK, rate, scenes, secs, advance, nudge]);
+
+  // タブ/アプリから戻った時：一時停止を解除し、止まっていれば現在シーンを読み直す
+  useEffect(() => {
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      if (!playingRef.current || !window.speechSynthesis) return;
+      try { window.speechSynthesis.resume(); } catch { /* noop */ }
+      if (!window.speechSynthesis.speaking) setNudge((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

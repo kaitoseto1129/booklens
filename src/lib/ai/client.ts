@@ -7,9 +7,9 @@ export function claude(): Anthropic {
   return _client;
 }
 
-export const MODEL = process.env.BOOKLENS_MODEL ?? "claude-opus-5";
+export const MODEL = process.env.BOOKLENS_MODEL ?? "claude-sonnet-5";
 // 要約系の思考深度。全呼び出しで統一することで根拠ブロックのプロンプトキャッシュを共有する（コスト削減の要）。
-export const EFFORT = (process.env.BOOKLENS_EFFORT ?? "high") as "low" | "medium" | "high" | "xhigh" | "max";
+export const EFFORT = (process.env.BOOKLENS_EFFORT ?? "medium") as "low" | "medium" | "high" | "xhigh" | "max";
 
 export function hasApiKey() {
   return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);

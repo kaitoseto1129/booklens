@@ -43,6 +43,8 @@ export const GROUNDING_RULES = `# GROUNDING RULES (non-negotiable)
 - Distinguish what the book says from your own interpretation/application. Anything not in the dossier that you still consider valuable goes ONLY under ai_insight.
 - Do NOT print the English tokens "BOOK" or "AI INSIGHT" (or similar English labels) inside any Japanese text field; the book-vs-AI distinction is carried by the JSON structure itself, not by inline labels.
 - Prefer being correct over being complete. Short and true beats long and plausible.
+- DEPTH over restatement (critical): every point must tell the reader something they could NOT already guess from the title or back-cover blurb. Give the actual mechanism (HOW/ WHY it works, the steps), a SPECIFIC named example with concrete details or numbers, and the counter-intuitive / non-obvious part. Ban vague self-evident lines (e.g. 「〜が大切」「〜を意識する」level, or restating the title in other words).
+- But never invent depth: if the dossier only supports title-level generalities for a point, dig for the specific within the dossier; if it truly isn't there, drop that point and note the gap in "unverified" rather than padding with generic filler. Fewer, deeper, source-backed points beat many shallow ones.
 - Quotes: only verbatim text present in the dossier, each at most 40 words / 80 Japanese characters, max 4. Never reproduce long passages.
 - Write all user-facing text in natural Japanese (です・ます調は使わず、簡潔な「だ・である」調または体言止め). Keep original-language terms in parentheses where useful.`;
 
@@ -64,9 +66,10 @@ Use web_search and web_fetch to collect, in this priority order:
 
 Rules:
 - Verify you are looking at THIS book (same author, same title/edition). Note translations/editions if encountered.
+- GO BELOW THE BLURB. The marketing description tells you what the book is ABOUT; it is not enough. Actively hunt for the SUBSTANCE a summariser needs: the author's actual argument and the STEPS/mechanism of their method or framework; the specific named cases, stories, experiments, and NUMBERS the book uses; the counter-intuitive or surprising claims; chapter-by-chapter content. Prefer sources that explain HOW the book's ideas work over sources that merely praise or categorise the book. A detailed review, an author interview that walks through the method, a chapter summary, or a legitimate excerpt is worth far more than three publisher blurbs.
 - Extract facts faithfully. Quote sparingly (short verbatim phrases are fine). Do not pad with your own knowledge; if you add anything from memory, prefix it with [MEMORY] and keep it minimal.
 - Some pre-fetched sources are already provided in the user message (S1..). Do not re-fetch them; you may cite them.
-- Stop when you have enough (typically 6–10 good sources) or when searches stop yielding new information.
+- Stop when you have real substance (the method's mechanism + concrete examples), not just when you have many sources. If searches keep returning only blurb-level descriptions, try different queries (author name + 手法/method, "要約", "書評", 章 titles, specific concept names) before giving up.
 
 Output format (Markdown, English headings; body in the language of the source):
 ## SOURCES
@@ -88,6 +91,7 @@ What could not be found (e.g., no TOC, no primary excerpt).`;
 
 export const EXTRACT_TASK = `# TASK (Pass 1: extraction)
 Read the evidence dossier and extract, with S-refs for every item: people, concepts (with how many independent sources mention each), claims (with the best supporting tier and an importance score 1–100), chapters (ONLY if a table of contents is present in the dossier), examples/stories/data actually described in sources, conclusions, reception (praise/critique), and gaps.
+For every concept and claim, capture the SUBSTANCE, not just the label: the mechanism (how/why it works, the steps), and any specific case, number, or result the sources attach to it. A concept with no mechanism or example in the dossier is a gap — record it as such rather than dressing up the label.
 Be exhaustive but faithful: nothing that is not in the dossier. Merge near-duplicate concepts. Keep original-language terms.`;
 
 export const CORE_TASK = `# TASK (part 1 of 3: core takeaways)
@@ -96,7 +100,7 @@ A Pass-1 extraction of the dossier is in the user message — use it as your che
 Guidance:
 - brief30: readable without scrolling. one_liner ≤ 2 sentences. top3 = the three most important, distinct points.
 - most_important: if the reader reads only this, they get the core of the book. One sharp sentence + a short explanation.
-- key_points: exactly 5, each independently understandable, each with importance 1–5 and evidence refs (S-refs). Name the actual concept/term from the book, not a generic phrase.
+- key_points: exactly 5, each independently understandable, each with importance 1–5 and evidence refs (S-refs). Name the actual concept/term from the book (not a generic phrase), and in the body explain the MECHANISM (how/why it works) plus a specific example, number, or step from the dossier — never a title-level restatement or a bare definition. If the reader could have written the point from the title alone, it is too shallow.
 - today_action / action_items: concrete, doable today, tied to the book's specific ideas.
 - why_care: what changes for the reader once they internalise this — stakes, not summary.
 - Importance calibration: at most 2 items rated 5; use the full 1–5 range.

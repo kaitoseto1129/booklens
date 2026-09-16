@@ -17,8 +17,8 @@ import { computeConfidence } from "./ai/confidence";
 import { emptyUsage, hasApiKey } from "./ai/client";
 
 const running = new Map<string, Promise<void>>();
-/** 高速モード（既定ON）：Web調査を絞り、情報源整理と抽出を並列化、gapfillを省略。BOOKLENS_FAST=0 で厚めに。 */
-const FAST = process.env.BOOKLENS_FAST !== "0";
+/** 高速モード（既定OFF＝深さ優先）：ONにするとWeb調査を絞り・gapfill省略で速くなるが内容が浅くなりうる。BOOKLENS_FAST=1 で有効。 */
+const FAST = process.env.BOOKLENS_FAST === "1";
 
 /** 候補 → books 行。ISBN があれば openBD / NDL / Open Library で書誌を補完する。 */
 export async function ensureBook(c: Candidate): Promise<BookRow> {

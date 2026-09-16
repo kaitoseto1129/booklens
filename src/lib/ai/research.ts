@@ -19,12 +19,11 @@ export async function buildDossier(
   const userText = `# PRE-FETCHED SOURCES (already verified; cite by ref)\n${prefetchedBlock(prefetched) || "(none)"}\n\nNow research the book and write the dossier.`;
 
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: userText }];
-  // 速度と根拠のバランス。多すぎるWeb往復が最大の遅延要因。
-  // 高速モード(既定)は検索4・取得2、BOOKLENS_FAST=0 で厚め(検索5・取得3)。
-  const fast = process.env.BOOKLENS_FAST !== "0";
+  // 既定は深さ優先（検索7・取得5）。BOOKLENS_FAST=1 で速度優先(検索4・取得2)だが内容は浅くなりうる。
+  const fast = process.env.BOOKLENS_FAST === "1";
   const tools = [
-    { type: "web_search_20260209" as const, name: "web_search" as const, max_uses: fast ? 4 : 5 },
-    { type: "web_fetch_20260209" as const, name: "web_fetch" as const, max_uses: fast ? 2 : 3, max_content_tokens: fast ? 12000 : 14000 },
+    { type: "web_search_20260209" as const, name: "web_search" as const, max_uses: fast ? 4 : 7 },
+    { type: "web_fetch_20260209" as const, name: "web_fetch" as const, max_uses: fast ? 2 : 5, max_content_tokens: fast ? 12000 : 16000 },
   ];
 
   let response = await client.messages.create({

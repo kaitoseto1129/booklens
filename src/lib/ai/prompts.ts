@@ -61,8 +61,10 @@ Use web_search and web_fetch to collect, in this priority order:
 3. The table of contents (tier 1 if from publisher/author/retailer product page${jp ? "：紀伊國屋・honto・楽天ブックス・版元ドットコムの目次" : ""}; otherwise mark the tier honestly)
 4. Legitimate public previews or excerpts (tier 1) — only what is openly published; never paywalled/pirated text
 5. Interviews, talks, podcasts with the author about this book; university/library/course pages (tier 2)
-6. Reviews from major media or reputable outlets; academic commentary (tier 3)
-7. Reader reviews / blogs / forums (tier 4) — only to corroborate, never as sole evidence
+6. **Substantive summaries / detailed reviews that lay out the book's ACTUAL arguments, chapter points, techniques, and examples** (tier 3, or tier 4 if a personal blog) — for a well-known book these are the richest ACCESSIBLE source of real content. Search explicitly for them and FETCH the 2–3 richest ones in full.${jp ? " 日本語の検索語例：「<タイトル> 要約」「<タイトル> まとめ」「<タイトル> 書評」「<タイトル> 感想 具体例」「<タイトル> 章 ポイント」「<著者> <手法名>」。note.com・書評ブログ・読書メモ記事は、手法の手順・具体例・数字など実質的な中身を含むことが多い。" : ""}
+7. Reader reviews / forums (tier 4) — to corroborate.
+
+The blurb tells you WHAT the book is about; source type 6 is where you get HOW it actually works. Never finish with only a blurb and a TOC — for any reasonably known book, keep searching until you have at least a few sources that describe the real content, or record honestly that they don't exist.
 
 Rules:
 - Verify you are looking at THIS book (same author, same title/edition). Note translations/editions if encountered.
@@ -99,7 +101,8 @@ Produce ONLY these sections of the analysis in Japanese, following the schema: b
 A Pass-1 extraction of the dossier is in the user message — use it as your checklist; nothing beyond the dossier.
 Guidance:
 - brief30: readable without scrolling. one_liner ≤ 2 sentences. top3 = the three most important, distinct points.
-- most_important: if the reader reads only this, they get the core of the book. One sharp sentence + a short explanation.
+- most_important: if the reader reads only this, they get the core of the book. One sharp sentence + a short explanation. It must NOT be the title, the subtitle, or the back-cover tagline reworded — a reader who has only seen the cover should learn something new here: the specific mechanism, the key distinction the author draws, or the single most counter-intuitive claim. If your sentence could be printed on the cover, dig deeper into the dossier for the real thesis.
+- top3 / concepts: each must carry the HOW or a concrete specific (a named method step, a figure, a real example), not a category label the reader could infer from the title.
 - key_points: exactly 5, each independently understandable, each with importance 1–5 and evidence refs (S-refs). Name the actual concept/term from the book (not a generic phrase), and in the body explain the MECHANISM (how/why it works) plus a specific example, number, or step from the dossier — never a title-level restatement or a bare definition. If the reader could have written the point from the title alone, it is too shallow.
 - today_action / action_items: concrete, doable today, tied to the book's specific ideas.
 - why_care: what changes for the reader once they internalise this — stakes, not summary.
